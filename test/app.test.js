@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import * as comparison from '../src/compare.js';
+import * as identity from '../src/identity.js';
+import * as projects from '../src/projects.js';
 import * as api from '../src/api.js';
 import { demoSnapshots } from '../src/demo.js';
 
@@ -27,7 +29,7 @@ function app(saved = []) {
   const requests = [], downloads = [];
   const { left } = demoSnapshots();
   const context = vm.createContext({
-    ...comparison, ...api, demoSnapshots, console, AbortController, setTimeout, clearTimeout, Blob,
+    ...comparison, ...identity, ...projects, ...api, demoSnapshots, console, AbortController, setTimeout, clearTimeout, Blob,
     crypto: { randomUUID: () => `project-${++sequence}` },
     URL: { createObjectURL: blob => { downloads.push(blob); return 'blob:synthetic'; }, revokeObjectURL() {} },
     document: { getElementById: id => { assert.ok(nodes.has(id), `Unknown element: ${id}`); return nodes.get(id); }, createElement: () => new Node(), createTextNode: text => new Node(text) },

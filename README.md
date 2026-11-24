@@ -14,7 +14,7 @@ Open <http://127.0.0.1:4173>. Select **Explore demo** to try the complete report
 
 Use **Manage projects** to add each project. Set the exact expected REDCap title, HTTPS API URL and API token. Optionally add comma-separated tags such as DEV, PROD or a study name. The token needs API export privileges for the requested exports. Select any two distinct projects as reference and comparison, then select **Compare projects**. Tags do not restrict pairings or validate REDCap production status.
 
-Project configuration, including tags, is saved in browser local storage. Existing phase/group and environment labels are loaded as tags and saved in that format on the next configuration change. Tokens are kept in memory and must be entered again after a reload. Tokens are excluded from saved configuration and downloaded reports. Project removal is immediate. Use the same host and port to return to the same browser configuration.
+Project configuration, including tags, is saved in browser local storage. Existing phase/group and environment labels are loaded as tags and saved in that format on the next configuration change. Configuration saved by earlier versions under `redcap-comparator.projects.v1` moves to `redcap-toolkit.projects.v1` on the next load; the old entry is removed only after the new one is saved. Tokens are kept in memory and must be entered again after a reload. Tokens are excluded from saved configuration and downloaded reports. Project removal is immediate. Use the same host and port to return to the same browser configuration.
 
 ## Direct API access and the optional proxy
 
@@ -58,7 +58,9 @@ The dependency-free tests cover comparison semantics, identity checks, optional 
 
 - `index.html` and `styles.css`: single-page interface.
 - `src/app.js`: configuration, comparison orchestration, filters and report downloads.
-- `src/compare.js`: pure comparison and identity rules.
+- `src/compare.js`: pure comparison rules.
+- `src/identity.js`: pure project identity rules.
+- `src/projects.js`: reading and writing saved project configuration, with storage passed in.
 - `src/api.js`: API requests and response validation.
 - `src/demo.js`: synthetic demonstration data.
 - `server.js`: local static server and optional restricted proxy.
