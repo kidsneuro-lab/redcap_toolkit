@@ -1,7 +1,17 @@
 // Upload template rules. Pure: no DOM, storage or network.
 
 // Fields that cannot take imported values: no data, a file, or a value REDCap recalculates. @READONLY only limits data entry, so it stays.
-const excluded = field => ['descriptive', 'file', 'calc'].includes(field.field_type) || /@CALCTEXT\b/.test(field.field_annotation || '');
+// Returns the reason a field is excluded, or an empty string.
+const excluded = field => ({ descriptive: 'Descriptive text, no data', file: 'File upload, not importable', calc: 'Calculated by REDCap' })[field.field_type]
+  || (/@CALCTEXT\b/.test(field.field_annotation || '') ? 'Calculated by REDCap (@CALCTEXT)' : '');
+
+// Every field of one instrument except the record ID, in Metadata order, with what the template does with it.
+export function templateFields({ metadata, fieldNames }, instrument) {
+  return metadata.filter(row => row.form_name === instrument && row.field_name !== metadata[0].field_name).map(row => ({
+    name: row.field_name, label: row.field_label, type: row.field_type, excluded: excluded(row),
+    readonly: /@READONLY\b/.test(row.field_annotation || ''), columns: fieldNames.filter(item => item.original_field_name === row.field_name).length
+  }));
+}
 
 // Columns for one instrument, in Metadata order. Names come from REDCap's exportFieldNames export.
 // Without `selected` (All mode) every importable field is included. With it (Selected mode), only the listed field names and status column.
