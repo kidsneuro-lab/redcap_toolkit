@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compareSnapshots, validateIdentity, validatePair } from '../src/compare.js';
+import { compareSnapshots } from '../src/compare.js';
 import { demoSnapshots } from '../src/demo.js';
 
 test('identical complete schemas have no differences', () => {
@@ -84,19 +84,4 @@ test('repeating custom labels are compared and successful empty exports are supp
   assert.equal(compareSnapshots(left, right).sections.repeating[0].changes[0].property, 'custom_form_label');
   left.repeating = []; right.repeating = [];
   assert.equal(compareSnapshots(left, right).counts.repeating.entities, 0);
-});
-
-test('identity validation requires exact title independently of descriptive tags', () => {
-  const config = { expectedTitle: 'Phase 1 DEV', tags: ['PROD'] };
-  const info = { project_title: 'Phase 1 DEV', project_id: 1, in_production: '0', is_longitudinal: 0 };
-  assert.deepEqual(validateIdentity(config, info), []);
-  assert.match(validateIdentity(config, { ...info, project_title: 'Phase 1 DEV ' })[0], /title mismatch/);
-  assert.deepEqual(validateIdentity(config, { ...info, in_production: '1' }), []);
-  assert.deepEqual(validateIdentity({ expectedTitle: info.project_title }, info), []);
-  assert.match(validateIdentity(config, { ...info, is_longitudinal: 1 })[0], /longitudinal/);
-});
-
-test('duplicate underlying projects are rejected despite URL slash or numeric ID differences', () => {
-  assert.throws(() => validatePair({ apiUrl: 'https://example.org/api/' }, { project_id: 1 }, { apiUrl: 'https://example.org/api' }, { project_id: '1' }), /same REDCap project/);
-  assert.doesNotThrow(() => validatePair({ apiUrl: 'https://example.org/api/' }, { project_id: 1 }, { apiUrl: 'https://other.example.org/api/' }, { project_id: 1 }));
 });

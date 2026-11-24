@@ -26,7 +26,7 @@ This app compares schemas from any two classic REDCap projects, without longitud
 
 ## Implementation boundaries
 
-- Keep comparison and identity rules in `src/compare.js` independent of the DOM, storage and network.
+- Keep comparison rules in `src/compare.js` and identity rules in `src/identity.js`, both independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
 - Keep API requests and response validation in `src/api.js`. Keep page orchestration, configuration, filters and report downloads in `src/app.js`.
 - Keep `server.js` optional for static hosting. When adding a browser module or asset, update its explicit static-file allowlist so the local server can serve it.
 - Render exported labels, logic, annotations and HTML as text. Preserve keyboard access and explicit reference and comparison labels.

@@ -1,11 +1,12 @@
-import { compareSnapshots, sections, validateIdentity, validatePair } from './compare.js';
+import { compareSnapshots, sections } from './compare.js';
+import { validateIdentity, validatePair } from './identity.js';
+import { readProjects, writeProjects } from './projects.js';
 import { fetchExport, validateApiUrl } from './api.js';
 import { demoSnapshots } from './demo.js';
 
 const $ = id => document.getElementById(id);
 const titles = { project: 'Project settings', instruments: 'Instruments', repeating: 'Repeating instruments', metadata: 'Field metadata' };
 const statusLabels = { changed: 'Changed', unchanged: 'Unchanged', 'reference-only': 'Reference only', 'comparison-only': 'Comparison only' };
-const storageKey = 'redcap-comparator.projects.v1';
 let projects = [], report = null, activeSection = 'project', controller = null;
 
 function element(tag, text, className) {
@@ -31,23 +32,10 @@ function invalidate() {
   $('empty-state').hidden = false;
 }
 function persist() {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(projects.map(({ id, label, expectedTitle, tags, apiUrl }) => ({ id, label, expectedTitle, tags, apiUrl }))));
-  } catch { notice('Browser storage is unavailable. Configuration will only be available in this session.'); }
+  try { writeProjects(localStorage, projects); } catch { notice('Browser storage is unavailable. Configuration will only be available in this session.'); }
 }
 function loadProjects() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    if (!Array.isArray(saved)) throw new Error();
-    const ids = new Set();
-    projects = saved.map(config => {
-      if (!['id', 'label', 'expectedTitle', 'apiUrl'].every(key => typeof config[key] === 'string' && config[key]) || ids.has(config.id)) throw new Error();
-      ids.add(config.id);
-      const tags = config.tags ?? [config.phase, config.environment].filter(Boolean);
-      if (!Array.isArray(tags) || tags.some(tag => typeof tag !== 'string')) throw new Error();
-      return { id: config.id, label: config.label, expectedTitle: config.expectedTitle, tags: [...new Set(tags.map(tag => tag.trim()).filter(Boolean))], apiUrl: validateApiUrl(config.apiUrl), token: '' };
-    });
-  } catch { projects = []; notice('Saved configuration could not be loaded. Add your project details again.', true); }
+  try { projects = readProjects(localStorage).map(project => ({ ...project, token: '' })); } catch { projects = []; notice('Saved configuration could not be loaded. Add your project details again.', true); }
 }
 function renderProjects() {
   $('project-count').textContent = `(${projects.length})`;
