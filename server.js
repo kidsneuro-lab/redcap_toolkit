@@ -5,8 +5,8 @@ import { resolve } from 'node:path';
 import { validateApiUrl } from './src/api.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/toolkit.css', ['toolkit.css', 'text/css']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'theme'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
-const permittedExports = new Set(['project', 'instrument', 'metadata', 'repeatingFormsEvents']);
+const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/toolkit.css', ['toolkit.css', 'text/css']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'template', 'theme'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
+const permittedExports = new Set(['project', 'instrument', 'metadata', 'repeatingFormsEvents', 'exportFieldNames']);
 const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
 
 export function createAppServer({ allowedUrls = [], fetcher = fetch } = {}) {
