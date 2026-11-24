@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { validateApiUrl } from './src/api.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/styles.css', ['styles.css', 'text/css']], ...['app', 'api', 'compare', 'demo', 'identity', 'projects'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
+const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/styles.css', ['styles.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'identity', 'projects', 'projects-view'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
 const permittedExports = new Set(['project', 'instrument', 'metadata', 'repeatingFormsEvents']);
 const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
 

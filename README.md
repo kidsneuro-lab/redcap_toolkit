@@ -52,12 +52,15 @@ Survey setup, XML, events, arms, instrument-event mappings and saved baseline co
 npm test
 ```
 
-The dependency-free tests cover comparison semantics, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream. App tests use a minimal DOM and synthetic exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
+The dependency-free tests cover comparison semantics, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream. View tests mount the Projects area and Schema comparison into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
 ## Files
 
 - `index.html` and `styles.css`: single-page interface.
-- `src/app.js`: configuration, comparison orchestration, filters and report downloads.
+- `src/app.js`: startup only. Mounts the Projects area and the Schema comparison Tool and connects them through `toolkit`.
+- `src/projects-view.js`: the Projects area: saved project configuration and session tokens.
+- `src/compare-view.js`: the Schema comparison Tool: comparison orchestration, filters and report downloads.
+- `src/dom.js`: small DOM helpers used by the views.
 - `src/compare.js`: pure comparison rules.
 - `src/identity.js`: pure project identity rules.
 - `src/projects.js`: reading and writing saved project configuration, with storage passed in.
