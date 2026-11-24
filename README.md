@@ -60,7 +60,7 @@ The dependency-free tests cover comparison semantics, identity checks, optional 
 
 ## Files
 
-- `index.html` and `styles.css`: single-page interface. `styles.css` adds to the vendored Tabler CSS.
+- `index.html` and `toolkit.css`: single-page interface. `toolkit.css` holds the few rules the vendored Tabler CSS lacks.
 - `vendor/`: Tabler CSS and the Tabler and Tabler Icons licences.
 - `src/app.js`: startup only. Mounts the Projects drawer and the router and connects Tools through `toolkit`.
 - `src/router.js`: hash routes and navbar links. Each Tool is mounted on its first visit, then hidden and shown; unknown routes open Schema comparison.

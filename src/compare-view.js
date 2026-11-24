@@ -3,24 +3,30 @@ import { validateIdentity, validatePair } from './identity.js';
 import { fetchExport } from './api.js';
 import { demoSnapshots } from './demo.js';
 import { button, download, element, option } from './dom.js';
+import { icon } from './icons.js';
 
 const titles = { project: 'Project settings', instruments: 'Instruments', repeating: 'Repeating instruments', metadata: 'Field metadata' };
 const statusLabels = { changed: 'Changed', unchanged: 'Unchanged', 'reference-only': 'Reference only', 'comparison-only': 'Comparison only' };
-const template = `<div class="page-heading"><div><p class="eyebrow">REDCap schema comparison</p><h1>Compare with confidence.</h1><p class="lede">Review project settings, instruments and field definitions side by side.</p></div><button id="demo" class="secondary">Explore demo</button></div>
-<section class="panel comparison-panel" aria-labelledby="comparison-heading">
-  <div class="section-heading"><h2 id="comparison-heading">Choose your projects</h2><button id="manage" class="text-button" aria-haspopup="dialog">Manage projects <span id="project-count"></span></button></div>
-  <div class="selection-grid"><div><label for="reference">Reference project</label><select id="reference"><option value="">Select a project</option></select><p class="hint">Values appear on the left.</p></div><span class="versus" aria-hidden="true">vs</span><div><label for="comparison">Comparison project</label><select id="comparison"><option value="">Select a project</option></select><p class="hint">Values appear on the right.</p></div><button id="compare" class="primary">Compare projects</button></div>
+// Badge colours carry no clinical severity. They only tell presence and change apart.
+const statusBadges = { changed: 'bg-yellow-lt', unchanged: 'bg-green-lt', 'reference-only': 'bg-yellow-lt', 'comparison-only': 'bg-blue-lt' };
+const template = `<div class="page-header mt-0 mb-4 d-print-none"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap schema comparison</div><h1 class="page-title">Compare with confidence.</h1><p class="text-secondary mb-0 mt-1">Review project settings, instruments and field definitions side by side.</p></div><div class="col-auto"><button id="demo" class="btn" type="button">Explore demo</button></div></div></div>
+<section class="card mb-4 d-print-none" aria-labelledby="comparison-heading">
+  <div class="card-header"><h2 id="comparison-heading" class="card-title">Choose your projects</h2><div class="card-actions"><button id="manage" class="btn btn-link" type="button" aria-haspopup="dialog">Manage projects <span id="project-count" class="ms-1"></span></button></div></div>
+  <div class="card-body"><div class="row g-3 align-items-center"><div class="col-md"><label class="form-label" for="reference">Reference project</label><select id="reference" class="form-select"><option value="">Select a project</option></select><div class="form-hint">Values appear on the left.</div></div><div class="col-md-auto d-none d-md-block text-secondary" aria-hidden="true">vs</div><div class="col-md"><label class="form-label" for="comparison">Comparison project</label><select id="comparison" class="form-select"><option value="">Select a project</option></select><div class="form-hint">Values appear on the right.</div></div></div></div>
+  <div class="card-footer text-end"><button id="compare" class="btn btn-primary" type="button">Compare projects</button></div>
 </section>
-<section id="status-panel" class="panel" aria-label="Comparison progress" hidden><div class="section-heading"><h2 id="status-title">Fetching schema</h2><button id="cancel-compare" class="secondary">Cancel comparison</button></div><div id="progress" class="progress-grid"></div></section>
-<section id="empty-state" class="empty-state"><div class="empty-symbol" aria-hidden="true">≍</div><h2>Your schema review starts here</h2><p>Add your projects, then run a comparison.<br>Or explore the demo to see how differences are reported.</p><button id="empty-add" class="secondary">Set up projects</button></section>
+<section id="status-panel" class="card mb-4 d-print-none" aria-label="Comparison progress" hidden><div class="card-header"><h2 id="status-title" class="card-title">Fetching schema</h2><div class="card-actions"><button id="cancel-compare" class="btn" type="button">Cancel comparison</button></div></div><div id="progress" class="card-body row g-3"></div></section>
+<section id="empty-state" class="empty"><div class="empty-icon">${icon('arrows-diff')}</div><h2 class="empty-title">Your schema review starts here</h2><p class="empty-subtitle text-secondary">Add your projects, then run a comparison.<br>Or explore the demo to see how differences are reported.</p><div class="empty-action"><button id="empty-add" class="btn btn-primary" type="button">Set up projects</button></div></section>
 <section id="report" aria-labelledby="report-heading" hidden>
-  <div class="report-heading"><div><p id="report-kind" class="eyebrow">Comparison report</p><h2 id="report-heading">Schema comparison</h2><p id="report-context" class="hint"></p></div><button id="download" class="secondary">Download report</button></div>
-  <div id="identities" class="identity-grid"></div>
-  <p class="coverage">Coverage: project information, instrument definitions, repeating configuration and field metadata. Survey setup is not checked. Review against your change specification is manual. Exports are retrieved separately and are not an atomic snapshot.</p>
-  <div id="summary" class="summary-grid"></div>
-  <div class="report-controls"><div><label for="search">Search report</label><input id="search" type="search" placeholder="Field, property or value"></div><div><label for="instrument-filter">Instrument</label><select id="instrument-filter"><option value="">All instruments</option></select></div><label class="checkbox-label"><input id="differences-only" type="checkbox" checked> Differences only</label></div>
-  <div id="tabs" class="tabs" role="tablist" aria-label="Report sections"></div>
-  <div id="results" class="panel results-panel" role="tabpanel" tabindex="0"></div>
+  <div class="row g-3 align-items-center mb-3"><div class="col"><div id="report-kind" class="page-pretitle">Comparison report</div><h2 id="report-heading" class="h1 mb-1">Schema comparison</h2><div id="report-context" class="text-secondary"></div></div><div class="col-auto"><button id="download" class="btn d-print-none" type="button">${icon('download', 'me-1')}Download report</button></div></div>
+  <div id="identities" class="row g-3"></div>
+  <p class="text-secondary small my-3">Coverage: project information, instrument definitions, repeating configuration and field metadata. Survey setup is not checked. Review against your change specification is manual. Exports are retrieved separately and are not an atomic snapshot.</p>
+  <div id="summary" class="row g-3"></div>
+  <div class="row g-3 align-items-end my-3 d-print-none"><div class="col-md"><label class="form-label" for="search">Search report</label><input id="search" class="form-control" type="search" placeholder="Field, property or value"></div><div class="col-md-4 col-lg-3"><label class="form-label" for="instrument-filter">Instrument</label><select id="instrument-filter" class="form-select"><option value="">All instruments</option></select></div><div class="col-md-auto"><label class="form-check mb-2"><input id="differences-only" class="form-check-input" type="checkbox" checked><span class="form-check-label">Differences only</span></label></div></div>
+  <div class="card">
+    <div class="card-header d-print-none"><div id="tabs" class="nav nav-tabs card-header-tabs" role="tablist" aria-label="Report sections"></div></div>
+    <div id="results" class="card-body" role="tabpanel" tabindex="0"></div>
+  </div>
 </section>`;
 
 function mount(container, toolkit) {
@@ -67,9 +73,9 @@ function mount(container, toolkit) {
     const signal = controller.signal, startedAt = new Date().toISOString();
     const timeout = setTimeout(() => controller?.abort(new Error('Comparison timed out after 90 seconds. Check connectivity and try again.')), 90000);
     const progressNodes = configs.map(config => {
-      const node = element('div', undefined, 'progress-project');
+      const node = element('div', undefined, 'col-md-6');
       node.append(element('strong', config.label));
-      const progress = element('p', 'Project Info: checking identity…');
+      const progress = element('p', 'Project Info: checking identity…', 'text-secondary mb-0');
       progress.setAttribute('aria-live', 'polite'); node.append(progress); return { node, progress };
     });
     $('progress').replaceChildren(...progressNodes.map(item => item.node));
@@ -122,9 +128,9 @@ function mount(container, toolkit) {
     $('report-heading').textContent = 'Schema comparison';
     $('report-context').textContent = `${configs[0].label} compared with ${configs[1].label} · ${new Date(provenance.completedAt).toLocaleString('en-AU')}`;
     $('identities').replaceChildren(...report.projects.map((project, i) => {
-      const card = element('div', undefined, 'identity');
-      card.append(element('span', [i ? 'Comparison' : 'Reference', ...project.tags].join(' · '), 'badge'), element('strong', project.label), element('p', `Project ID ${project.projectId} · ${project.validation}`, 'hint'));
-      return card;
+      const column = element('div', undefined, 'col-md-6'), card = element('div', undefined, 'card card-body h-100 text-break');
+      card.append(element('span', [i ? 'Comparison' : 'Reference', ...project.tags].join(' · '), 'badge bg-azure-lt align-self-start mb-2'), element('strong', project.label), element('div', `Project ID ${project.projectId} · ${project.validation}`, 'text-secondary small'));
+      column.append(card); return column;
     }));
     const forms = [...new Set([...left.instruments, ...right.instruments].map(row => row.instrument_name))].sort();
     $('instrument-filter').replaceChildren(option('All instruments', ''));
@@ -141,12 +147,12 @@ function mount(container, toolkit) {
     if (!report) return;
     $('summary').replaceChildren(...sections.map(section => {
       const count = report.counts[section];
-      const card = button('', () => setSection(section), `summary-card${activeSection === section ? ' active' : ''}`);
-      card.append(element('span', titles[section]), element('strong', String(count.entities)), element('span', section === 'project' ? `${projectUnexpectedCount()} unexpected · ${count.entities - projectUnexpectedCount()} expected` : `changed or unmatched · ${count.properties} changed properties`));
-      return card;
+      const column = element('div', undefined, 'col-6 col-lg-3'), card = button('', () => setSection(section), `card card-body card-link h-100 w-100 text-start${activeSection === section ? ' card-active' : ''}`);
+      card.append(element('div', titles[section], 'subheader'), element('div', String(count.entities), 'h1 my-2'), element('div', section === 'project' ? `${projectUnexpectedCount()} unexpected · ${count.entities - projectUnexpectedCount()} expected` : `changed or unmatched · ${count.properties} changed properties`, 'text-secondary small'));
+      column.append(card); return column;
     }));
     $('tabs').replaceChildren(...sections.map((section, index) => {
-      const tab = button(titles[section], () => setSection(section));
+      const tab = button(titles[section], () => setSection(section), `nav-link${activeSection === section ? ' active' : ''}`);
       tab.id = `tab-${section}`; tab.setAttribute('role', 'tab'); tab.setAttribute('aria-selected', String(activeSection === section)); tab.setAttribute('aria-controls', 'results'); tab.tabIndex = activeSection === section ? 0 : -1;
       tab.addEventListener('keydown', event => {
         const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -163,9 +169,9 @@ function mount(container, toolkit) {
     return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   }
   function valueNode(value, present) {
-    if (!present) return element('span', 'Not present', 'missing');
-    const text = formatValue(value), pre = element('pre', text);
-    if (text.length > 400) { const details = element('details', undefined, 'value-details'); details.append(element('summary', `Expand value (${text.length} characters)`), pre); return details; }
+    if (!present) return element('span', 'Not present', 'text-secondary fst-italic');
+    const text = formatValue(value), pre = element('div', text, 'font-monospace text-pre-wrap text-break');
+    if (text.length > 400) { const details = element('details'); details.append(element('summary', `Expand value (${text.length} characters)`, 'small text-primary'), pre); return details; }
     return pre;
   }
   function rowMatchesInstrument(row, form) {
@@ -178,16 +184,16 @@ function mount(container, toolkit) {
     $('instrument-filter').disabled = activeSection === 'project';
     const rows = report.sections[activeSection].filter(row => (!differencesOnly || row.status !== 'unchanged') && rowMatchesInstrument(row, form) && (!query || JSON.stringify(row).toLowerCase().includes(query)));
     const note = activeSection === 'project' ? 'Expected differences remain visible. Other changed properties require review; the app does not assign clinical severity.' : activeSection === 'instruments' ? 'Instrument status includes changes to its fields. Field counts may overlap when a field moves between instruments.' : activeSection === 'metadata' ? 'Reference only and comparison only describe presence, not the history of an addition or deletion. Order positions are among shared fields within the same instrument.' : 'Repeating instruments are matched by form name. An empty successful export means none are configured.';
-    $('results').replaceChildren(element('p', `${rows.length} of ${report.sections[activeSection].length} entries shown. ${note}`, 'result-note'));
-    if (!rows.length) { $('results').append(element('p', 'No entries match the current filters.', 'hint')); return; }
+    $('results').replaceChildren(element('p', `${rows.length} of ${report.sections[activeSection].length} entries shown. ${note}`, 'text-secondary small'));
+    if (!rows.length) { $('results').append(element('p', 'No entries match the current filters.', 'text-secondary mb-0')); return; }
     for (const row of rows) {
-      const details = element('details', undefined, 'result-row');
-      const summary = element('summary');
-      summary.append(element('span', row.id, 'entity-id'), element('span', statusLabels[row.status], `badge ${row.status}`));
-      if (row.expected && row.status !== 'unchanged') summary.append(element('span', 'Expected difference', 'badge expected'));
-      summary.append(element('span', activeSection === 'instruments' ? `${row.fieldChanges} changed or unmatched fields` : `${row.changes.length} changed properties`, 'row-description'));
-      const table = element('table'), head = element('thead'), heading = element('tr');
-      for (const text of ['Property', `Reference · ${report.projects[0].label}`, `Comparison · ${report.projects[1].label}`]) { const th = element('th', text); th.scope = 'col'; heading.append(th); }
+      const details = element('details', undefined, 'card mb-2');
+      const summary = element('summary', undefined, 'card-body py-2');
+      summary.append(element('span', row.id, 'font-monospace fw-bold text-break me-2'), element('span', statusLabels[row.status], `badge ${statusBadges[row.status]} me-2`));
+      if (row.expected && row.status !== 'unchanged') summary.append(element('span', 'Expected difference', 'badge bg-secondary-lt me-2'));
+      summary.append(element('span', activeSection === 'instruments' ? `${row.fieldChanges} changed or unmatched fields` : `${row.changes.length} changed properties`, 'text-secondary small'));
+      const table = element('table', undefined, 'table table-sm card-table'), head = element('thead'), heading = element('tr');
+      for (const text of ['Property', `Reference · ${report.projects[0].label}`, `Comparison · ${report.projects[1].label}`]) { const th = element('th', text, `text-wrap${text === 'Property' ? ' w-25' : ''}`); th.scope = 'col'; heading.append(th); }
       head.append(heading); table.append(head);
       const body = element('tbody');
       let values = row.changes;
@@ -196,11 +202,11 @@ function mount(container, toolkit) {
         else values = [...new Set([...Object.keys(row.left || {}), ...Object.keys(row.right || {})])].map(property => ({ property, left: row.left?.[property], right: row.right?.[property], leftPresent: !!row.left && Object.hasOwn(row.left, property), rightPresent: !!row.right && Object.hasOwn(row.right, property) }));
       }
       for (const change of values) {
-        const tr = element('tr'), key = element('th', change.property); key.scope = 'row'; tr.append(key);
-        for (const side of ['left', 'right']) { const td = element('td'); td.append(valueNode(change[side], change[`${side}Present`])); tr.append(td); }
+        const tr = element('tr'), key = element('th', change.property, 'text-break'); key.scope = 'row'; tr.append(key);
+        for (const side of ['left', 'right']) { const td = element('td', undefined, 'text-break'); td.append(valueNode(change[side], change[`${side}Present`])); tr.append(td); }
         body.append(tr);
       }
-      table.append(body); const scroll = element('div', undefined, 'table-scroll'); scroll.append(table); details.append(summary, scroll); $('results').append(details);
+      table.append(body); const scroll = element('div', undefined, 'table-responsive border-top'); scroll.append(table); details.append(summary, scroll); $('results').append(details);
     }
   }
   for (const id of ['search', 'instrument-filter', 'differences-only']) $(id).addEventListener(id === 'search' ? 'input' : 'change', renderRows);
