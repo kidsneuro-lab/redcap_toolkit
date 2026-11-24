@@ -7,7 +7,7 @@ import { validateApiUrl } from './src/api.js';
 const root = fileURLToPath(new URL('.', import.meta.url));
 const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/styles.css', ['styles.css', 'text/css']], ...['app', 'api', 'compare', 'demo'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']]),
   // PROTOTYPE, throwaway: toolkit shell variants.
-  ['/prototype/toolkit-shell.html', ['prototype/toolkit-shell.html', 'text/html']], ['/prototype/toolkit-shell.css', ['prototype/toolkit-shell.css', 'text/css']], ['/prototype/toolkit-shell.js', ['prototype/toolkit-shell.js', 'text/javascript']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']]]);
+  ['/prototype/toolkit-shell.html', ['prototype/toolkit-shell.html', 'text/html']], ['/prototype/toolkit-shell.css', ['prototype/toolkit-shell.css', 'text/css']], ['/prototype/toolkit-shell.js', ['prototype/toolkit-shell.js', 'text/javascript']], ['/prototype/upload-template.html', ['prototype/upload-template.html', 'text/html']], ['/prototype/upload-template.js', ['prototype/upload-template.js', 'text/javascript']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']]]);
 const permittedExports = new Set(['project', 'instrument', 'metadata', 'repeatingFormsEvents']);
 const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
 
