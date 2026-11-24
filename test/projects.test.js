@@ -1,16 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readProjects, writeProjects } from '../src/projects.js';
-
-function fakeStorage(entries = {}) {
-  const items = new Map(Object.entries(entries));
-  return {
-    items,
-    getItem: key => items.has(key) ? items.get(key) : null,
-    setItem: (key, value) => { items.set(key, String(value)); },
-    removeItem: key => { items.delete(key); }
-  };
-}
+import { fakeStorage } from './storage.js';
 
 test('saved project configurations round trip without tokens', () => {
   const storage = fakeStorage();

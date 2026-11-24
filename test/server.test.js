@@ -34,9 +34,9 @@ test('server handler serves actual HTML and modules with a restrictive file allo
   await withServer({}, async (base, send) => {
     const response = await send(base);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /Compare with confidence/);
+    assert.match(await response.text(), /<script type="module" src="src\/app.js">/);
     assert.match(response.headers.get('content-security-policy'), /script-src 'self'/);
-    assert.equal((await send(`${base}/src/app.js`)).status, 200);
+    for (const name of ['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'identity', 'projects', 'projects-view']) assert.equal((await send(`${base}/src/${name}.js`)).status, 200, name);
     assert.equal((await send(`${base}/package.json`)).status, 404);
     assert.equal((await send(`${base}/server.js`)).status, 404);
   });
