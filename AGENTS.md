@@ -19,6 +19,11 @@ This app compares schemas from any two classic REDCap projects, without longitud
 - Keep version 1 focused on Project Info, Instruments, Repeating Instruments and Events, and Metadata exports. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
 - Describe agreement only within the exported settings. Current schema equality cannot establish change history, a prior baseline or compliance with a change specification. Specification review remains manual.
 
+## Read-only REDCap access
+
+- Every REDCap operation must be a read-only export. Never call API methods that import, delete, rename, lock or otherwise change project data, settings, users or files, in application code, the proxy, tests or live checks.
+- Generated files such as upload templates are downloads for people to use elsewhere. The app must not submit them to REDCap.
+
 ## Implementation boundaries
 
 - Keep comparison and identity rules in `src/compare.js` independent of the DOM, storage and network.
