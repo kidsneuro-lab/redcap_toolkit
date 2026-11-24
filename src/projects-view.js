@@ -42,7 +42,7 @@ export function mountProjects(container, { trigger, hostname, storage, notice })
     $('token-count').textContent = projects.length ? `${entered} of ${projects.length} tokens` : 'No projects';
     $('token-count').className = `badge ms-2 ${projects.length && entered === projects.length ? 'bg-green-lt' : 'bg-orange-lt'}`;
     $('project-list').replaceChildren();
-    if (!projects.length) $('project-list').append(element('p', 'No projects configured yet.', 'hint'));
+    if (!projects.length) $('project-list').append(element('p', 'No projects configured yet.', 'text-secondary'));
     for (const project of projects) {
       const row = element('div', undefined, 'list-group-item'), info = element('div');
       info.append(element('div', project.label, 'fw-bold'));

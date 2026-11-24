@@ -5,7 +5,7 @@ export function element(tag, text, className) {
   if (className) node.className = className;
   return node;
 }
-export function button(text, action, className = 'secondary') {
+export function button(text, action, className = 'btn') {
   const node = element('button', text, className);
   node.type = 'button';
   node.addEventListener('click', action);
@@ -18,7 +18,7 @@ export function option(text, value) {
 }
 export function notice(target, message, error = false) {
   target.textContent = message;
-  target.className = `notice${error ? ' error' : ''}`;
+  target.className = `alert ${error ? 'alert-danger' : 'alert-info'} text-pre-wrap text-break d-print-none`;
   target.hidden = !message;
 }
 export function download(blob, name) {

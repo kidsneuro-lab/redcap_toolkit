@@ -1,0 +1,8 @@
+/* The few rules the vendored Tabler CSS lacks. Everything else uses Tabler classes. */
+[hidden] { display: none !important; }
+/* The Projects drawer is a native modal <dialog> with Tabler offcanvas classes. */
+dialog.offcanvas { margin: 0; padding: 0; max-height: none; height: 100dvh; inset-inline-start: auto; }
+dialog.offcanvas:not([open]) { display: none; }
+dialog.offcanvas::backdrop { background: rgb(24 36 51 / .5); }
+/* Notices and exported values keep their exact line breaks and spacing. */
+.text-pre-wrap { white-space: pre-wrap; }

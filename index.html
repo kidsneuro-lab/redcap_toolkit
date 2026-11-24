@@ -7,7 +7,7 @@
   <title>REDCap Toolkit</title>
   <script src="src/theme.js"></script>
   <link rel="stylesheet" href="vendor/tabler/1.7.5/tabler.min.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="toolkit.css">
   <script type="module" src="src/app.js"></script>
 </head>
 <body>
@@ -29,9 +29,9 @@
     <div class="page-wrapper">
       <div class="page-body">
         <div class="container-xl">
-          <div id="notice" class="notice" role="status" hidden></div>
+          <div id="notice" class="alert alert-info text-pre-wrap text-break d-print-none" role="status" hidden></div>
           <main id="tools"></main>
-          <footer>Read-only REDCap exports. A schema comparison match covers only the exported settings.</footer>
+          <footer class="footer footer-transparent border-top mt-4 d-print-none">Read-only REDCap exports. A schema comparison match covers only the exported settings.</footer>
         </div>
       </div>
     </div>
