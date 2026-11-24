@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { validateApiUrl } from './src/api.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/styles.css', ['styles.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'identity', 'projects', 'projects-view'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
+const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/styles.css', ['styles.css', 'text/css']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'theme'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
 const permittedExports = new Set(['project', 'instrument', 'metadata', 'repeatingFormsEvents']);
 const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
 
@@ -57,5 +57,5 @@ export function createAppServer({ allowedUrls = [], fetcher = fetch } = {}) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 4173);
   const server = createAppServer({ allowedUrls: (process.env.REDCAP_API_URLS || '').split(',').map(value => value.trim()).filter(Boolean) });
-  server.listen(port, '127.0.0.1', () => console.log(`REDCap comparator: http://127.0.0.1:${server.address().port}`));
+  server.listen(port, '127.0.0.1', () => console.log(`REDCap Toolkit: http://127.0.0.1:${server.address().port}`));
 }

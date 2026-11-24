@@ -8,20 +8,21 @@ import compareView from '../src/compare-view.js';
 const project = (id, label, tags = []) => ({ id, label, expectedTitle: label, tags, apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
 
 // Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch, keyed by token.
-function mountTool(projects) {
+function mountTool(projects, { proxy = false } = {}) {
   const document = installDocument();
   const container = document.createElement('div');
   const { left } = demoSnapshots();
   const calls = { notices: [], busy: [], shown: [] }, requests = [];
   globalThis.fetch = async (url, { body }) => {
     const config = projects.find(item => item.token === body.get('token')), section = body.get('content');
-    requests.push([config.id, section]);
+    requests.push([config.id, section, url]);
     const exports = { project: { ...left.project, project_id: config.id, project_title: config.expectedTitle, in_production: 1 }, instrument: left.instruments, repeatingFormsEvents: left.repeating, metadata: left.metadata };
     return Response.json(exports[section]);
   };
   const toolkit = {
     projects: () => projects.map(item => ({ ...item })),
     onProjectsChange: () => {},
+    proxy: () => proxy,
     notice: (message, error = false) => calls.notices.push({ message, error }),
     showProjects: (...args) => calls.shown.push(args),
     setBusy: busy => calls.busy.push(busy)
@@ -78,6 +79,21 @@ test('a missing session token opens the Projects area instead of requesting expo
   await ui.$('compare').click();
   assert.equal(ui.requests.length, 0);
   assert.equal(ui.calls.shown.length, 1);
-  assert.equal(ui.$('manage').getAttribute('aria-expanded'), 'true');
   assert.match(ui.lastNotice().message, /Enter an API token/);
+});
+
+test('exports go through the local proxy only when the toolkit proxy setting is on', async () => {
+  for (const [proxy, url] of [[false, 'https://demo.invalid/api/'], [true, '/api/export']]) {
+    const ui = mountTool([project('one', 'First'), project('two', 'Second')], { proxy });
+    ui.select('one', 'two');
+    await ui.$('compare').click();
+    assert.deepEqual([...new Set(ui.requests.map(request => request[2]))], [url]);
+  }
+});
+
+test('Manage projects and Set up projects open the Projects drawer through the toolkit', async () => {
+  const ui = mountTool([]);
+  await ui.$('manage').click();
+  await ui.$('empty-add').click();
+  assert.deepEqual(ui.calls.shown, [[], [true, { addIfEmpty: true }]]);
 });

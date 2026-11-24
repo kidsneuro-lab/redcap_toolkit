@@ -1,6 +1,10 @@
-# REDCap schema comparator
+# REDCap Toolkit
 
-A single-page app using HTML, CSS and plain JavaScript. Compares schemas from any two classic REDCap projects. No framework, build step or package installation is required.
+A single-page app using HTML, CSS and plain JavaScript, with read-only tools for the schemas of classic REDCap projects. Its first Tool, **Schema comparison**, compares schemas from any two classic REDCap projects. No framework, build step or package installation is required.
+
+The interface uses [Tabler](https://tabler.io) 1.7.5 CSS, vendored in `vendor/tabler/1.7.5/` with its MIT licence (sha384 `BY4EnLpEeqBnDZno/u4SjmwHqbv1/U9as69Q0Jk/zeaDJ8iV10NK7FP+6fFEGW4i`). Tabler's JavaScript is not used. The few icons are inline outline SVGs from `@tabler/icons` 3.52.0, whose MIT licence is in `vendor/tabler-icons/3.52.0/`.
+
+Supported browsers: Chrome and Edge 123, Firefox 128 and Safari 17.5 or later. Tabler's CSS relies on `light-dark()`, `:has()`, `color-mix()` and relative colours without fallbacks.
 
 ## Run locally
 
@@ -10,9 +14,9 @@ Requires Node.js 22 or later.
 npm start
 ```
 
-Open <http://127.0.0.1:4173>. Select **Explore demo** to try the complete report using synthetic data without contacting REDCap.
+Open <http://127.0.0.1:4173>. Tools are listed in the navbar and each has its own address, such as `#/compare`. Select **Explore demo** to try the complete report using synthetic data without contacting REDCap. The moon button switches between light and dark themes; until you choose, the page follows your system setting, and your choice is remembered in this browser.
 
-Use **Manage projects** to add each project. Set the exact expected REDCap title, HTTPS API URL and API token. Optionally add comma-separated tags such as DEV, PROD or a study name. The token needs API export privileges for the requested exports. Select any two distinct projects as reference and comparison, then select **Compare projects**. Tags do not restrict pairings or validate REDCap production status.
+Use the **Projects** button in the navbar to add each project. It shows how many session tokens are entered, in orange while any is missing and green when all are entered. A Tool that needs a missing token opens the Projects drawer. Set the exact expected REDCap title, HTTPS API URL and API token. Optionally add comma-separated tags such as DEV, PROD or a study name. The token needs API export privileges for the requested exports. Select any two distinct projects as reference and comparison, then select **Compare projects**. Tags do not restrict pairings or validate REDCap production status.
 
 Project configuration, including tags, is saved in browser local storage. Existing phase/group and environment labels are loaded as tags and saved in that format on the next configuration change. Configuration saved by earlier versions under `redcap-comparator.projects.v1` moves to `redcap-toolkit.projects.v1` on the next load; the old entry is removed only after the new one is saved. Tokens are kept in memory and must be entered again after a reload. Tokens are excluded from saved configuration and downloaded reports. Project removal is immediate. Use the same host and port to return to the same browser configuration.
 
@@ -26,7 +30,7 @@ If direct access is blocked, stop the server and restart with an explicit allowl
 REDCAP_API_URLS='https://redcap.example.org/api/' npm start
 ```
 
-Separate multiple API URLs with commas. Then enable **Use local proxy** in the page. The proxy forwards only the four schema export operations to the configured HTTPS URLs, refuses redirects, checks request origins and binds to loopback. Tokens pass through memory and are not logged or written to disk. Do not expose this development server to the network. Internal hosting should use a managed server with equivalent restrictions and HTTPS.
+Separate multiple API URLs with commas. Then enable **Use local proxy** in the Projects drawer. The switch appears only when the page is served from `127.0.0.1` or `localhost`. The proxy forwards only the four schema export operations to the configured HTTPS URLs, refuses redirects, checks request origins and binds to loopback. Tokens pass through memory and are not logged or written to disk. Do not expose this development server to the network. Internal hosting should use a managed server with equivalent restrictions and HTTPS.
 
 The static page and `src/` modules can also be hosted without Node. In that case direct browser access is required unless the host provides the optional `/api/export` contract. The **Use local proxy** option is intended for the supplied local server.
 
@@ -52,13 +56,17 @@ Survey setup, XML, events, arms, instrument-event mappings and saved baseline co
 npm test
 ```
 
-The dependency-free tests cover comparison semantics, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream. View tests mount the Projects area and Schema comparison into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
+The dependency-free tests cover comparison semantics, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream. View tests mount the router, the Projects drawer and Schema comparison into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
 ## Files
 
-- `index.html` and `styles.css`: single-page interface.
-- `src/app.js`: startup only. Mounts the Projects area and the Schema comparison Tool and connects them through `toolkit`.
-- `src/projects-view.js`: the Projects area: saved project configuration and session tokens.
+- `index.html` and `styles.css`: single-page interface. `styles.css` adds to the vendored Tabler CSS.
+- `vendor/`: Tabler CSS and the Tabler and Tabler Icons licences.
+- `src/app.js`: startup only. Mounts the Projects drawer and the router and connects Tools through `toolkit`.
+- `src/router.js`: hash routes and navbar links. Each Tool is mounted on its first visit, then hidden and shown; unknown routes open Schema comparison.
+- `src/theme.js`: sets the light or dark theme before first paint. A classic script, because the CSP blocks inline scripts.
+- `src/projects-view.js`: the Projects button and drawer: saved project configuration, session tokens and the proxy switch.
+- `src/icons.js`: inline Tabler icons used by the views.
 - `src/compare-view.js`: the Schema comparison Tool: comparison orchestration, filters and report downloads.
 - `src/dom.js`: small DOM helpers used by the views.
 - `src/compare.js`: pure comparison rules.

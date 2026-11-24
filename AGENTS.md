@@ -14,7 +14,7 @@
 
 This app compares schemas from any two classic REDCap projects, without longitudinal events or arms.
 
-- Preserve the single-page HTML, CSS and plain JavaScript implementation. Keep it buildless and dependency-free unless the user requests a change that warrants another approach.
+- Preserve the single-page HTML, CSS and plain JavaScript implementation. Keep it buildless, with the vendored Tabler CSS in `vendor/` as its only third-party file and no Tabler JavaScript, unless the user requests a change that warrants another approach.
 - Read [README.md](README.md) before changing setup, deployment, storage or report behaviour. Use `package.json` as the source of truth for runnable commands.
 - Keep version 1 focused on Project Info, Instruments, Repeating Instruments and Events, and Metadata exports. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
 - Describe agreement only within the exported settings. Current schema equality cannot establish change history, a prior baseline or compliance with a change specification. Specification review remains manual.
@@ -27,7 +27,7 @@ This app compares schemas from any two classic REDCap projects, without longitud
 ## Implementation boundaries
 
 - Keep comparison rules in `src/compare.js` and identity rules in `src/identity.js`, both independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
-- Keep API requests and response validation in `src/api.js`. Keep the Projects area and session tokens in `src/projects-view.js`, and comparison orchestration, filters and report downloads in `src/compare-view.js`.
+- Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, and comparison orchestration, filters and report downloads in `src/compare-view.js`.
 - Each Tool view exports `{ id, title, mount(container, toolkit) }` and reaches projects, tokens, notices and the Projects area only through `toolkit`. Views touch the DOM only inside `mount`. `src/app.js` is startup only and the one module that looks up elements from the page.
 - Keep `server.js` optional for static hosting. When adding a browser module or asset, update its explicit static-file allowlist so the local server can serve it.
 - Render exported labels, logic, annotations and HTML as text. Preserve keyboard access and explicit reference and comparison labels.

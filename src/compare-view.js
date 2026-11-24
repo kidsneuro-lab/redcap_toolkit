@@ -6,16 +6,12 @@ import { button, download, element, option } from './dom.js';
 
 const titles = { project: 'Project settings', instruments: 'Instruments', repeating: 'Repeating instruments', metadata: 'Field metadata' };
 const statusLabels = { changed: 'Changed', unchanged: 'Unchanged', 'reference-only': 'Reference only', 'comparison-only': 'Comparison only' };
-// projects-slot and notice-slot keep toolkit-level parts in their current place on the page until the Projects drawer replaces them.
 const template = `<div class="page-heading"><div><p class="eyebrow">REDCap schema comparison</p><h1>Compare with confidence.</h1><p class="lede">Review project settings, instruments and field definitions side by side.</p></div><button id="demo" class="secondary">Explore demo</button></div>
 <section class="panel comparison-panel" aria-labelledby="comparison-heading">
-  <div class="section-heading"><h2 id="comparison-heading">Choose your projects</h2><button id="manage" class="text-button" aria-expanded="false" aria-controls="configuration">Manage projects <span id="project-count"></span></button></div>
+  <div class="section-heading"><h2 id="comparison-heading">Choose your projects</h2><button id="manage" class="text-button" aria-haspopup="dialog">Manage projects <span id="project-count"></span></button></div>
   <div class="selection-grid"><div><label for="reference">Reference project</label><select id="reference"><option value="">Select a project</option></select><p class="hint">Values appear on the left.</p></div><span class="versus" aria-hidden="true">vs</span><div><label for="comparison">Comparison project</label><select id="comparison"><option value="">Select a project</option></select><p class="hint">Values appear on the right.</p></div><button id="compare" class="primary">Compare projects</button></div>
-  <div class="connection-row"><label class="checkbox-label"><input id="proxy" type="checkbox"> Use local proxy</label><span class="hint">For installations that block direct browser API access. Configure allowed API URLs on the local server first.</span></div>
 </section>
-<div id="projects-slot"></div>
 <section id="status-panel" class="panel" aria-label="Comparison progress" hidden><div class="section-heading"><h2 id="status-title">Fetching schema</h2><button id="cancel-compare" class="secondary">Cancel comparison</button></div><div id="progress" class="progress-grid"></div></section>
-<div id="notice-slot"></div>
 <section id="empty-state" class="empty-state"><div class="empty-symbol" aria-hidden="true">≍</div><h2>Your schema review starts here</h2><p>Add your projects, then run a comparison.<br>Or explore the demo to see how differences are reported.</p><button id="empty-add" class="secondary">Set up projects</button></section>
 <section id="report" aria-labelledby="report-heading" hidden>
   <div class="report-heading"><div><p id="report-kind" class="eyebrow">Comparison report</p><h2 id="report-heading">Schema comparison</h2><p id="report-context" class="hint"></p></div><button id="download" class="secondary">Download report</button></div>
@@ -47,17 +43,13 @@ function mount(container, toolkit) {
       select.value = projects.some(project => project.id === selected) ? selected : '';
     }
   }
-  function showProjects(open = true, options) {
-    toolkit.showProjects(open, options);
-    $('manage').setAttribute('aria-expanded', String(open));
-  }
-  $('manage').addEventListener('click', () => showProjects($('manage').getAttribute('aria-expanded') !== 'true'));
-  $('empty-add').addEventListener('click', () => showProjects(true, { addIfEmpty: true }));
-  for (const id of ['reference', 'comparison', 'proxy']) $(id).addEventListener('change', () => { invalidate(); notice(''); });
+  $('manage').addEventListener('click', () => toolkit.showProjects());
+  $('empty-add').addEventListener('click', () => toolkit.showProjects(true, { addIfEmpty: true }));
+  for (const id of ['reference', 'comparison']) $(id).addEventListener('change', () => { invalidate(); notice(''); });
   toolkit.onProjectsChange(projects => { invalidate(); renderProjects(projects); });
 
   function setBusy(busy) {
-    for (const id of ['compare', 'demo', 'reference', 'comparison', 'proxy', 'manage', 'empty-add']) $(id).disabled = busy;
+    for (const id of ['compare', 'demo', 'reference', 'comparison', 'manage', 'empty-add']) $(id).disabled = busy;
     toolkit.setBusy(busy);
     $('status-panel').hidden = !busy;
     $('compare').textContent = busy ? 'Comparing…' : 'Compare projects';
@@ -68,7 +60,7 @@ function mount(container, toolkit) {
     const selected = [$('reference').value, $('comparison').value].map(id => toolkit.projects().find(project => project.id === id));
     if (selected.some(project => !project)) return notice('Select a reference project and a comparison project.', true);
     if (selected[0].id === selected[1].id) return notice('Select two distinct projects.', true);
-    if (selected.some(project => !project.token)) { showProjects(); return notice('Enter an API token for each selected project using Edit. Tokens are required again after a page reload.', true); }
+    if (selected.some(project => !project.token)) { toolkit.showProjects(); return notice('Enter an API token for each selected project with Enter token in Projects. Tokens are required again after a page reload.', true); }
     invalidate(); notice('');
     const configs = selected.map(project => ({ ...project }));
     controller = new AbortController();
@@ -85,7 +77,7 @@ function mount(container, toolkit) {
     try {
       const snapshots = [{}, {}], timings = [{}, {}];
       const request = async (i, section) => {
-        const value = await fetchExport(configs[i], section, { signal, proxy: $('proxy').checked });
+        const value = await fetchExport(configs[i], section, { signal, proxy: toolkit.proxy() });
         timings[i][section] = new Date().toISOString(); return value;
       };
       const infoResults = await Promise.allSettled(configs.map((_, i) => request(i, 'project')));

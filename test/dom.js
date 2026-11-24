@@ -4,7 +4,7 @@ const voidTags = new Set(['input', 'meta', 'link', 'br', 'img', 'hr']);
 
 class FakeNode {
   constructor(document, tag = '#text', text = '') {
-    Object.assign(this, { ownerDocument: document, tagName: tag.toUpperCase(), textContent: text, value: '', id: '', className: '', type: '', href: '', download: '', tabIndex: 0, hidden: false, disabled: false, checked: false, inert: false, parentNode: null, children: [], attributes: {}, events: {} });
+    Object.assign(this, { ownerDocument: document, tagName: tag.toUpperCase(), textContent: text, value: '', id: '', className: '', type: '', href: '', download: '', tabIndex: 0, hidden: false, disabled: false, checked: false, inert: false, open: false, parentNode: null, children: [], attributes: {}, events: {} });
   }
   append(...nodes) {
     for (const node of nodes) {
@@ -34,6 +34,7 @@ class FakeNode {
   }
   setAttribute(name, value) { this.attributes[name] = String(value); }
   getAttribute(name) { return this.attributes[name] ?? null; }
+  removeAttribute(name) { delete this.attributes[name]; }
   addEventListener(name, handler) { (this.events[name] ??= []).push(handler); }
   // Returns the handlers' results so tests can await asynchronous handlers.
   dispatch(name, event = {}) { return Promise.all((this.events[name] || []).map(handler => handler({ preventDefault() {}, ...event }))); }
@@ -43,6 +44,9 @@ class FakeNode {
     return this.dispatch('click');
   }
   focus() { this.ownerDocument.activeElement = this; }
+  // A dialog records whether it was opened modally, which a browser exposes only through the :modal pseudo-class.
+  showModal() { this.open = true; this.modal = true; }
+  close() { if (!this.open) return; this.open = false; this.modal = false; this.dispatch('close'); }
   reset() {
     for (const node of this.descendants()) if (['INPUT', 'SELECT', 'TEXTAREA'].includes(node.tagName)) { node.value = ''; node.checked = 'checked' in node.attributes; }
   }
@@ -61,7 +65,7 @@ class FakeNode {
         if (['hidden', 'checked', 'disabled'].includes(name)) node[name] = true;
       }
       parent.append(node);
-      if (!voidTags.has(tag.toLowerCase())) stack.push(node);
+      if (!voidTags.has(tag.toLowerCase()) && !attributes.endsWith('/')) stack.push(node);
     }
   }
 }
