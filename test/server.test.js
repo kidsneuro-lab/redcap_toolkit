@@ -36,7 +36,7 @@ test('server handler serves actual HTML and modules with a restrictive file allo
     assert.equal(response.status, 200);
     assert.match(await response.text(), /<script type="module" src="src\/app.js">/);
     assert.match(response.headers.get('content-security-policy'), /script-src 'self'/);
-    for (const name of ['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'theme']) assert.equal((await send(`${base}/src/${name}.js`)).status, 200, name);
+    for (const name of ['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'template', 'theme']) assert.equal((await send(`${base}/src/${name}.js`)).status, 200, name);
     const tabler = await send(`${base}/vendor/tabler/1.7.5/tabler.min.css`);
     assert.equal(tabler.status, 200);
     assert.match(tabler.headers.get('content-type'), /^text\/css/);
@@ -59,6 +59,15 @@ test('proxy permits only configured HTTPS targets, export operations and same-or
     assert.equal((await post({ apiUrl: 'https://other.example.org/api/' })).status, 403);
     assert.equal((await post({ content: 'record' })).status, 400);
     assert.equal(calls, 1);
+  });
+});
+
+test('proxy forwards the exportFieldNames export used by Upload template', async () => {
+  const target = 'https://redcap.example.org/api/', contents = [];
+  await withServer({ allowedUrls: [target], fetcher: async (url, options) => { contents.push(options.body.get('content')); return Response.json([{ original_field_name: 'record_id', choice_value: '', export_field_name: 'record_id' }]); } }, async (base, send) => {
+    const response = await send(`${base}/api/export`, { method: 'POST', headers: { Origin: base }, body: new URLSearchParams({ apiUrl: target, token: 'synthetic-test-token', content: 'exportFieldNames' }) });
+    assert.equal(response.status, 200);
+    assert.deepEqual(contents, ['exportFieldNames']);
   });
 });
 

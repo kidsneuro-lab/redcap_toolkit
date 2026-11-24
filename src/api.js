@@ -1,4 +1,4 @@
-export const exportsBySection = { project: 'project', instruments: 'instrument', repeating: 'repeatingFormsEvents', metadata: 'metadata' };
+export const exportsBySection = { project: 'project', instruments: 'instrument', repeating: 'repeatingFormsEvents', metadata: 'metadata', fieldNames: 'exportFieldNames' };
 
 export function validateApiUrl(value) {
   const url = new URL(value);
@@ -12,10 +12,10 @@ export function validateResponse(section, value) {
     if (!value || Array.isArray(value) || typeof value !== 'object' || typeof value.project_title !== 'string') throw new Error('Project Info returned an unexpected response.');
   } else {
     if (!Array.isArray(value) || value.some(row => !row || typeof row !== 'object' || Array.isArray(row))) throw new Error(`${section} returned an unexpected response.`);
-    const required = { instruments: 'instrument_name', metadata: 'field_name', repeating: 'form_name' }[section];
-    if (value.some(row => typeof row[required] !== 'string' || !row[required])) throw new Error(`${section} contains a missing ${required}.`);
+    const required = { instruments: ['instrument_name'], metadata: ['field_name'], repeating: ['form_name'], fieldNames: ['original_field_name', 'export_field_name'] }[section];
+    for (const name of required) if (value.some(row => typeof row[name] !== 'string' || !row[name])) throw new Error(`${section} contains a missing ${name}.`);
     if (section === 'metadata' && (!value.length || value.some(row => typeof row.form_name !== 'string' || !row.form_name))) throw new Error('Metadata must contain fields and instrument names.');
-    if (section === 'instruments' && !value.length) throw new Error('The instrument export was unexpectedly empty.');
+    if (['instruments', 'fieldNames'].includes(section) && !value.length) throw new Error(`The ${section === 'instruments' ? 'instrument' : 'field names'} export was unexpectedly empty.`);
   }
   return value;
 }

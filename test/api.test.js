@@ -36,3 +36,12 @@ test('network failures give actionable information without revealing credentials
 test('API URL validation rejects insecure endpoints and embedded credentials', () => {
   for (const url of ['http://example.org/api/', 'https://user:password@example.org/api/', 'https://example.org/api/?token=secret', 'https://example.org/api/#token']) assert.throws(() => validateApiUrl(url));
 });
+test('exportFieldNames is requested as a read-only export and malformed or empty responses are rejected', async () => {
+  const rows = [{ original_field_name: 'record_id', choice_value: '', export_field_name: 'record_id' }, { original_field_name: 'symptoms', choice_value: '-9', export_field_name: 'symptoms____9' }];
+  const value = await fetchExport(config, 'fieldNames', { fetcher: async (url, options) => { assert.equal(options.body.get('content'), 'exportFieldNames'); return Response.json(rows); } });
+  assert.deepEqual(value, rows);
+  assert.throws(() => validateResponse('fieldNames', []), /unexpectedly empty/);
+  assert.throws(() => validateResponse('fieldNames', { record_id: 'record_id' }), /unexpected response/);
+  assert.throws(() => validateResponse('fieldNames', [{ original_field_name: 'record_id', choice_value: '' }]), /missing export_field_name/);
+  assert.throws(() => validateResponse('fieldNames', [{ choice_value: '', export_field_name: 'record_id' }]), /missing original_field_name/);
+});

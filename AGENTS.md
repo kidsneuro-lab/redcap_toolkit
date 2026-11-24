@@ -12,11 +12,11 @@
 
 ## Scope and sources
 
-This app compares schemas from any two classic REDCap projects, without longitudinal events or arms.
+This app has two Tools for classic REDCap projects, without longitudinal events or arms: Schema comparison compares the schemas of any two projects, and Upload template produces a header-only CSV for importing data into one instrument.
 
 - Preserve the single-page HTML, CSS and plain JavaScript implementation. Keep it buildless, with the vendored Tabler CSS in `vendor/` as its only third-party file and no Tabler JavaScript, unless the user requests a change that warrants another approach.
 - Read [README.md](README.md) before changing setup, deployment, storage or report behaviour. Use `package.json` as the source of truth for runnable commands.
-- Keep version 1 focused on Project Info, Instruments, Repeating Instruments and Events, and Metadata exports. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
+- Keep version 1 focused on five exports: Project Info, Instruments, Repeating Instruments and Events, and Metadata for Schema comparison, and Project Info, Metadata, Repeating Instruments and Events, and Export Field Names (`exportFieldNames`) for Upload template. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
 - Describe agreement only within the exported settings. Current schema equality cannot establish change history, a prior baseline or compliance with a change specification. Specification review remains manual.
 
 ## Read-only REDCap access
@@ -26,7 +26,7 @@ This app compares schemas from any two classic REDCap projects, without longitud
 
 ## Implementation boundaries
 
-- Keep comparison rules in `src/compare.js` and identity rules in `src/identity.js`, both independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
+- Keep comparison rules in `src/compare.js`, Upload template column rules in `src/template.js` and identity rules in `src/identity.js`, all independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
 - Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, and comparison orchestration, filters and report downloads in `src/compare-view.js`.
 - Each Tool view exports `{ id, title, mount(container, toolkit) }` and reaches projects, tokens, notices and the Projects area only through `toolkit`. Views touch the DOM only inside `mount`. `src/app.js` is startup only and the one module that looks up elements from the page.
 - Keep `server.js` optional for static hosting. When adding a browser module or asset, update its explicit static-file allowlist so the local server can serve it.
@@ -49,7 +49,7 @@ This app compares schemas from any two classic REDCap projects, without longitud
 - Store project configuration in browser local storage. Keep API tokens in session memory and exclude tokens from persisted configuration, report downloads, logs and URLs.
 - Keep fixtures and demo data synthetic. Use authorised credentials only for a specifically authorised live integration check.
 - Preserve HTTPS API requests with form-encoded POST bodies and redirect refusal.
-- Keep the local proxy bound to loopback, restricted to explicitly allowed API URLs and the four schema export operations. Preserve host and origin checks and generic upstream error messages.
+- Keep the local proxy bound to loopback, restricted to explicitly allowed API URLs and the five read-only export operations. Preserve host and origin checks and generic upstream error messages.
 - Treat CORS as a server permission requirement. Use the optional proxy when needed rather than weakening browser security.
 
 ## Verification and delivery
