@@ -1,5 +1,8 @@
 export const exportsBySection = { project: 'project', instruments: 'instrument', repeating: 'repeatingFormsEvents', metadata: 'metadata', fieldNames: 'exportFieldNames' };
 
+// The local server and its proxy are available only when the page is served from loopback.
+export const isLocalHost = hostname => ['127.0.0.1', 'localhost'].includes(hostname);
+
 export function validateApiUrl(value) {
   const url = new URL(value);
   if (url.protocol !== 'https:') throw new Error('Use an HTTPS REDCap API URL.');
@@ -20,7 +23,7 @@ export function validateResponse(section, value) {
   return value;
 }
 
-export async function fetchExport(config, section, { signal, proxy = false, fetcher = fetch } = {}) {
+export async function fetchExport(config, section, { signal, proxy = false, fetcher = fetch, hostname = globalThis.location?.hostname } = {}) {
   const apiUrl = validateApiUrl(config.apiUrl);
   const body = new URLSearchParams({ token: config.token, content: exportsBySection[section], format: 'json', returnFormat: 'json' });
   if (proxy) body.set('apiUrl', apiUrl);
@@ -29,6 +32,7 @@ export async function fetchExport(config, section, { signal, proxy = false, fetc
     response = await fetcher(proxy ? '/api/export' : apiUrl, { method: 'POST', body, signal, credentials: 'omit', redirect: 'error', cache: 'no-store' });
   } catch (error) {
     if (signal?.aborted) throw error;
+    if (!isLocalHost(hostname)) throw new Error('This REDCap may not allow requests from this site. Run the toolkit locally with the proxy (see README).');
     throw new Error(`Could not read ${section}. Check the API URL, network and CORS permissions, or use the local proxy.`);
   }
   if (!response.ok) throw new Error(`${section} request failed with HTTP ${response.status}. Check API permissions and connectivity.`);

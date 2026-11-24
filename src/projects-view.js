@@ -1,5 +1,5 @@
 import { readProjects, writeProjects } from './projects.js';
-import { validateApiUrl } from './api.js';
+import { isLocalHost, validateApiUrl } from './api.js';
 import { button, element } from './dom.js';
 import { icon } from './icons.js';
 
@@ -96,7 +96,7 @@ export function mountProjects(container, { trigger, hostname, storage, notice })
   $('cancel-edit').addEventListener('click', () => { $('project-form').hidden = true; $('project-form').reset(); });
 
   // The proxy is part of the supplied local server, so it is offered only when the page is served from loopback.
-  const local = ['127.0.0.1', 'localhost'].includes(hostname);
+  const local = isLocalHost(hostname);
   $('proxy-setting').hidden = !local;
 
   try { projects = readProjects(storage).map(project => ({ ...project, token: '' })); } catch { projects = []; notice('Saved configuration could not be loaded. Add your project details again.', true); }

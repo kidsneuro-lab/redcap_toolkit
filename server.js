@@ -1,11 +1,18 @@
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { validateApiUrl } from './src/api.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/toolkit.css', ['toolkit.css', 'text/css']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'template', 'template-view', 'theme'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
+// The Release workflow publishes exactly these files to GitHub Pages.
+export async function publishSite(dir) {
+  for (const file of new Set([...staticFiles.values()].map(([file]) => file))) {
+    await mkdir(dirname(resolve(dir, file)), { recursive: true });
+    await copyFile(resolve(root, file), resolve(dir, file));
+  }
+}
 const permittedExports = new Set(['project', 'instrument', 'metadata', 'repeatingFormsEvents', 'exportFieldNames']);
 const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
 

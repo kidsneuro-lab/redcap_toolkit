@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
-import { createAppServer } from '../server.js';
+import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, posix, relative, sep } from 'node:path';
+import { createAppServer, publishSite } from '../server.js';
 
 // Exercise the actual server request handler without binding a port. This also runs in restricted sandboxes.
 async function withServer(options, run) {
@@ -77,4 +80,27 @@ test('proxy strips remote error text rather than leaking credentials', async () 
     const response = await send(`${base}/api/export`, { method: 'POST', headers: { Origin: base }, body: new URLSearchParams({ apiUrl: target, token: 'synthetic-secret', content: 'project' }) });
     assert.equal(response.status, 502); assert.ok(!(await response.text()).includes('synthetic-secret'));
   });
+});
+
+// The files the page actually loads: index.html's script and stylesheet references, then each module's relative imports.
+async function pageFiles() {
+  const files = new Set(), pending = [];
+  const add = (from, ref) => { const file = posix.join(posix.dirname(from), ref); if (!files.has(file)) { files.add(file); pending.push(file); } };
+  add('', 'index.html');
+  while (pending.length) {
+    const file = pending.pop(), text = await readFile(new URL(`../${file}`, import.meta.url), 'utf8');
+    if (file.endsWith('.html')) for (const [, ref] of text.matchAll(/<(?:script|link)\b[^>]*?(?:src|href)="([^"]+)"/g)) add(file, ref);
+    if (file.endsWith('.js')) for (const [, ref] of text.matchAll(/^import\b[^'"]*['"](\.[^'"]+)['"]/gm)) add(file, ref);
+  }
+  return [...files].sort();
+}
+
+test('the Pages site publishes exactly the files the page loads', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'pages-'));
+  try {
+    await publishSite(dir);
+    const published = (await readdir(dir, { recursive: true, withFileTypes: true })).filter(entry => entry.isFile()).map(entry => relative(dir, join(entry.parentPath, entry.name)).split(sep).join('/')).sort();
+    assert.deepEqual(published, await pageFiles());
+    assert.equal(await readFile(join(dir, 'src/api.js'), 'utf8'), await readFile(new URL('../src/api.js', import.meta.url), 'utf8'));
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

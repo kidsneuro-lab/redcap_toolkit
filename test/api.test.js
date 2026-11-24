@@ -31,7 +31,12 @@ test('invalid JSON, wrong response shapes and empty metadata cannot become a mat
   assert.deepEqual(validateResponse('repeating', []), []);
 });
 test('network failures give actionable information without revealing credentials', async () => {
-  await assert.rejects(fetchExport(config, 'metadata', { fetcher: async () => { throw new Error(config.token); } }), error => /CORS/.test(error.message) && !error.message.includes(config.token));
+  await assert.rejects(fetchExport(config, 'metadata', { hostname: '127.0.0.1', fetcher: async () => { throw new Error(config.token); } }), error => /CORS/.test(error.message) && !error.message.includes(config.token));
+});
+test('network failures on a hosted site suggest running locally with the proxy', async () => {
+  const fail = async () => { throw new TypeError('Failed to fetch'); };
+  for (const hostname of ['h-joshi.github.io', '127.0.0.1.example.org']) await assert.rejects(fetchExport(config, 'metadata', { hostname, fetcher: fail }), { message: 'This REDCap may not allow requests from this site. Run the toolkit locally with the proxy (see README).' }, hostname);
+  for (const hostname of ['127.0.0.1', 'localhost']) await assert.rejects(fetchExport(config, 'metadata', { hostname, fetcher: fail }), /Could not read metadata/, hostname);
 });
 test('API URL validation rejects insecure endpoints and embedded credentials', () => {
   for (const url of ['http://example.org/api/', 'https://user:password@example.org/api/', 'https://example.org/api/?token=secret', 'https://example.org/api/#token']) assert.throws(() => validateApiUrl(url));
