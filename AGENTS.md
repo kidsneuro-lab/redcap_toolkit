@@ -27,7 +27,7 @@ This app has two Tools for classic REDCap projects, without longitudinal events 
 ## Implementation boundaries
 
 - Keep comparison rules in `src/compare.js`, Upload template column rules in `src/template.js` and identity rules in `src/identity.js`, all independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
-- Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, and comparison orchestration, filters and report downloads in `src/compare-view.js`.
+- Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, comparison orchestration, filters and report downloads in `src/compare-view.js`, and Upload template orchestration, field selection and CSV downloads in `src/template-view.js`.
 - Each Tool view exports `{ id, title, mount(container, toolkit) }` and reaches projects, tokens, notices and the Projects area only through `toolkit`. Views touch the DOM only inside `mount`. `src/app.js` is startup only and the one module that looks up elements from the page.
 - Keep `server.js` optional for static hosting. When adding a browser module or asset, update its explicit static-file allowlist so the local server can serve it.
 - Render exported labels, logic, annotations and HTML as text. Preserve keyboard access and explicit reference and comparison labels.

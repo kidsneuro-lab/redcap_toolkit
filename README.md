@@ -50,7 +50,15 @@ Reference-only and comparison-only describe presence, not change history. Curren
 
 Survey setup, XML, events, arms, instrument-event mappings and saved baseline comparisons are outside version 1. The four exports are separate requests, not an atomic snapshot. Avoid making schema changes while a comparison runs. Downloaded JSON includes both source schemas, differences, project identities, validation status and retrieval times. Treat those reports according to your organisation's information-handling requirements.
 
-## Upload template columns
+## Upload template
+
+Open **Upload template** in the navbar (`#/template`) and choose a project. Its Project Info must match the configured title exactly before Metadata, Repeating Instruments and Events and Export Field Names are requested; a project without a session token opens the Projects drawer instead. Choose an instrument, then **All importable fields** or **Selected fields**. The field table lists every field of the instrument in Metadata order, with excluded fields struck through and their reason, `@READONLY` fields badged and the number of columns each checkbox produces. In Selected fields nothing is ticked at first, including `<instrument>_complete`, and **Download CSV** stays disabled until a field is ticked. Ticked fields are kept when you switch between the two modes and cleared when you change instrument or project. The preview shows the header row, column count and filename, `<instrument>_upload_template_<YYYY-MM-DD>.csv`, which never contains the project title.
+
+**Explore demo** loads the synthetic "Example project DEV (demo, synthetic)" without contacting REDCap. It is not added to your projects, and its downloads start with `demo_`.
+
+The CSV is a template only. Fill in data rows and import it with REDCap's Data Import Tool yourself; this app never sends data to REDCap.
+
+### Upload template columns
 
 - Column names come from REDCap's Export Field Names (`exportFieldNames`) export, so checkbox columns are named exactly as REDCap names them, for example `symptoms____9` for code `-9`. An importable field missing from that export stops the template rather than leaving out its column.
 - The record ID is always the first column, even when the chosen instrument does not contain it.
@@ -66,7 +74,7 @@ Survey setup, XML, events, arms, instrument-event mappings and saved baseline co
 npm test
 ```
 
-The dependency-free tests cover comparison semantics, Upload template column rules, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream. View tests mount the router, the Projects drawer and Schema comparison into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
+The dependency-free tests cover comparison semantics, Upload template column rules, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream. View tests mount the router, the Projects drawer, Schema comparison and Upload template into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
 ## Files
 
@@ -78,6 +86,7 @@ The dependency-free tests cover comparison semantics, Upload template column rul
 - `src/projects-view.js`: the Projects button and drawer: saved project configuration, session tokens and the proxy switch.
 - `src/icons.js`: inline Tabler icons used by the views.
 - `src/compare-view.js`: the Schema comparison Tool: comparison orchestration, filters and report downloads.
+- `src/template-view.js`: the Upload template Tool: identity check, exports, field selection, preview and CSV download.
 - `src/dom.js`: small DOM helpers used by the views.
 - `src/compare.js`: pure comparison rules.
 - `src/template.js`: pure Upload template column rules and CSV serialisation.
