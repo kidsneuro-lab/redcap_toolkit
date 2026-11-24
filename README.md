@@ -34,6 +34,15 @@ Separate multiple API URLs with commas. Then enable **Use local proxy** in the P
 
 The static page and `src/` modules can also be hosted without Node. In that case direct browser access is required unless the host provides the optional `/api/export` contract. The **Use local proxy** option is intended for the supplied local server.
 
+## GitHub Pages
+
+Every push to `main` that passes the **Test** workflow is released to GitHub Pages by the **Release** workflow, which can also be run manually. It publishes exactly the files in the static-file allowlist in `server.js`, so a new browser module or asset must be added there. Pages must be enabled with **GitHub Actions** as the source.
+
+- **Public site from a private repository.** The published site is public even though the repository is private. The page holds no secrets; tokens exist only in the visitor's browser memory.
+- **Fewer security headers.** Pages cannot send custom headers, so the Content Security Policy and `no-referrer` policy are set with `<meta>` tags in `index.html`. `frame-ancestors` and `X-Content-Type-Options: nosniff` cannot be set this way, so the hosted page can be framed by other sites and does not have MIME sniffing disabled. The local server sends the full headers.
+- **Shared browser storage.** Every Pages site under the same `<account>.github.io` origin shares local storage, so another Pages site on the account could read saved project configuration (labels, expected titles, API URLs and tags, never tokens). Expected titles may be sensitive. Do not host untrusted Pages sites under the same account.
+- **No proxy.** The **Use local proxy** switch is hidden on the hosted page. If a request fails at the network level there, the page says "This REDCap may not allow requests from this site. Run the toolkit locally with the proxy (see README)." In that case follow [Direct API access and the optional proxy](#direct-api-access-and-the-optional-proxy).
+
 ## What the report means
 
 - Project Info must match each project's configured title exactly. Identity failure blocks the remaining exports.
@@ -74,7 +83,7 @@ The CSV is a template only. Fill in data rows and import it with REDCap's Data I
 npm test
 ```
 
-The dependency-free tests cover comparison semantics, Upload template column rules, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream. View tests mount the router, the Projects drawer, Schema comparison and Upload template into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
+The dependency-free tests cover comparison semantics, Upload template column rules, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison and Upload template into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
 ## Files
 
@@ -94,5 +103,5 @@ The dependency-free tests cover comparison semantics, Upload template column rul
 - `src/projects.js`: reading and writing saved project configuration, with storage passed in.
 - `src/api.js`: API requests and response validation.
 - `src/demo.js`: synthetic demonstration data.
-- `server.js`: local static server and optional restricted proxy.
+- `server.js`: local static server, optional restricted proxy and the file list published to GitHub Pages.
 - `test/`: repeatable automated checks.

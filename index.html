@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- GitHub Pages cannot send headers. server.js sends the full policy, including frame-ancestors, which a meta tag cannot set. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
   <meta name="description" content="Read-only tools for the schemas of classic REDCap projects.">
   <title>REDCap Toolkit</title>
   <script src="src/theme.js"></script>
