@@ -9,6 +9,24 @@ const titles = { project: 'Project settings', instruments: 'Instruments', repeat
 const statusLabels = { changed: 'Changed', unchanged: 'Unchanged', 'reference-only': 'Reference only', 'comparison-only': 'Comparison only' };
 // Badge colours carry no clinical severity. They only tell presence and change apart.
 const statusBadges = { changed: 'bg-yellow-lt', unchanged: 'bg-green-lt', 'reference-only': 'bg-yellow-lt', 'comparison-only': 'bg-blue-lt' };
+const sensitiveProjectInfo = new Set(['project_grant_number', 'project_irb_number', 'project_notes', 'project_pi_email', 'project_pi_firstname', 'project_pi_lastname']);
+const omittedValue = '[omitted from download]';
+
+function omitProjectInfo(report) {
+  const snapshots = Object.fromEntries(Object.entries(report.snapshots).map(([side, snapshot]) => [
+    side,
+    { ...snapshot, project: Object.fromEntries(Object.entries(snapshot.project).map(([key, value]) => [key, sensitiveProjectInfo.has(key) ? omittedValue : value])) }
+  ]));
+  const omittedProjectInfoProperties = [];
+  const project = report.sections.project.map(row => {
+    if (!sensitiveProjectInfo.has(row.id)) return row;
+    omittedProjectInfoProperties.push(row.id);
+    const left = snapshots.reference.project[row.id], right = snapshots.comparison.project[row.id];
+    return { ...row, left, right, changes: row.changes.map(change => ({ ...change, left, right })) };
+  });
+  return { ...report, coverage: { ...report.coverage, omittedProjectInfoProperties }, snapshots, sections: { ...report.sections, project } };
+}
+
 const template = `<div class="page-header mt-0 mb-4 d-print-none"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap schema comparison</div><h1 class="page-title">Compare with confidence.</h1><p class="text-secondary mb-0 mt-1">Review project settings, instruments and field definitions side by side.</p></div><div class="col-auto"><button id="demo" class="btn" type="button">Explore demo</button></div></div></div>
 <section class="card mb-4 d-print-none" aria-labelledby="comparison-heading">
   <div class="card-header"><h2 id="comparison-heading" class="card-title">Choose your projects</h2><div class="card-actions"><button id="manage" class="btn btn-link" type="button" aria-haspopup="dialog">Manage projects <span id="project-count" class="ms-1"></span></button></div></div>
@@ -18,7 +36,10 @@ const template = `<div class="page-header mt-0 mb-4 d-print-none"><div class="ro
 <section id="status-panel" class="card mb-4 d-print-none" aria-label="Comparison progress" hidden><div class="card-header"><h2 id="status-title" class="card-title">Fetching schema</h2><div class="card-actions"><button id="cancel-compare" class="btn" type="button">Cancel comparison</button></div></div><div id="progress" class="card-body row g-3"></div></section>
 <section id="empty-state" class="empty"><div class="empty-icon">${icon('arrows-diff')}</div><h2 class="empty-title">Your schema review starts here</h2><p class="empty-subtitle text-secondary">Add your projects, then run a comparison.<br>Or explore the demo to see how differences are reported.</p><div class="empty-action"><button id="empty-add" class="btn btn-primary" type="button">Set up projects</button></div></section>
 <section id="report" aria-labelledby="report-heading" hidden>
-  <div class="row g-3 align-items-center mb-3"><div class="col"><div id="report-kind" class="page-pretitle">Comparison report</div><h2 id="report-heading" class="h1 mb-1">Schema comparison</h2><div id="report-context" class="text-secondary"></div></div><div class="col-auto"><button id="download" class="btn d-print-none" type="button">${icon('download', 'me-1')}Download report</button></div></div>
+  <div class="row g-3 align-items-center mb-3"><div class="col"><div id="report-kind" class="page-pretitle">Comparison report</div><h2 id="report-heading" class="h1 mb-1">Schema comparison</h2><div id="report-context" class="text-secondary"></div></div><div class="col-auto d-print-none">
+    <label class="form-check"><input id="include-sensitive-project-info" class="form-check-input" type="checkbox"><span class="form-check-label">Include sensitive Project Info values in download</span></label>
+    <button id="download" class="btn" type="button">${icon('download', 'me-1')}Download report</button>
+  </div></div>
   <div id="identities" class="row g-3"></div>
   <p class="text-secondary small my-3">Coverage: project information, instrument definitions, repeating configuration and field metadata. Survey setup is not checked. Review against your change specification is manual. Exports are retrieved separately and are not an atomic snapshot.</p>
   <div id="summary" class="row g-3"></div>
@@ -122,7 +143,8 @@ function mount(container, toolkit) {
   function displayReport(left, right, configs, provenance) {
     const comparison = compareSnapshots(left, right);
     // Explicitly select safe configuration fields. Never copy the token into the report.
-    report = { version: 1, ...provenance, coverage: { classicProjectsOnly: true, surveySetup: false, specificationCheck: 'manual', atomicSnapshot: false }, projects: configs.map((config, i) => ({ label: config.label, expectedTitle: config.expectedTitle, tags: [...config.tags], apiUrl: config.apiUrl, projectId: [left, right][i].project.project_id, validation: provenance.demo ? 'demo data' : 'title verified' })), snapshots: { reference: left, comparison: right }, ...comparison };
+    report = { version: 1, ...provenance, coverage: { classicProjectsOnly: true, surveySetup: false, specificationCheck: 'manual', atomicSnapshot: false, omittedProjectInfoProperties: [] }, projects: configs.map((config, i) => ({ label: config.label, expectedTitle: config.expectedTitle, tags: [...config.tags], apiUrl: config.apiUrl, projectId: [left, right][i].project.project_id, validation: provenance.demo ? 'demo data' : 'title verified' })), snapshots: { reference: left, comparison: right }, ...comparison };
+    $('include-sensitive-project-info').checked = false;
     $('empty-state').hidden = true; $('report').hidden = false;
     $('report-kind').textContent = provenance.demo ? 'Demo report · synthetic data' : 'Comparison report';
     $('report-heading').textContent = 'Schema comparison';
@@ -218,7 +240,8 @@ function mount(container, toolkit) {
   });
   $('download').addEventListener('click', () => {
     if (!report) return;
-    download(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }), `redcap-comparison-${report.demo ? 'demo-' : ''}${report.completedAt.replace(/[:.]/g, '-')}.json`);
+    const downloadReport = $('include-sensitive-project-info').checked ? report : omitProjectInfo(report);
+    download(new Blob([JSON.stringify(downloadReport, null, 2)], { type: 'application/json' }), `redcap-comparison-${report.demo ? 'demo-' : ''}${report.completedAt.replace(/[:.]/g, '-')}.json`);
   });
 
   renderProjects(toolkit.projects());

@@ -1,7 +1,7 @@
 export function demoSnapshots() {
   const field = (field_name, form_name, field_label, extras = {}) => ({ field_name, form_name, field_type: 'text', field_label, required_field: '', branching_logic: '', field_annotation: '', ...extras });
   const left = {
-    project: { project_id: 101, project_title: 'Example project DEV', in_production: 0, is_longitudinal: 0, surveys_enabled: 1, project_language: 'English', purpose: 2 },
+    project: { project_id: 101, project_title: 'Example project DEV', in_production: 0, is_longitudinal: 0, surveys_enabled: 1, project_language: 'English', purpose: 2, project_pi_lastname: 'Example-Reference' },
     instruments: [{ instrument_name: 'enrolment', instrument_label: 'Enrolment' }, { instrument_name: 'sample', instrument_label: 'Sample collection' }],
     repeating: [{ form_name: 'sample', custom_form_label: '[sample_id]' }],
     metadata: [field('record_id', 'enrolment', 'Record ID'), field('consent', 'enrolment', 'Consent obtained?', { field_type: 'yesno', required_field: 'y' }), field('sample_id', 'sample', 'Sample ID'), field('collected', 'sample', 'Date collected', { text_validation_type_or_show_slider_number: 'date_ymd' }),
@@ -16,7 +16,7 @@ export function demoSnapshots() {
   const right = structuredClone(left);
   // Only the DEV project carries field names, for Upload template. Schema comparison does not compare them.
   delete right.fieldNames;
-  right.project = { ...right.project, project_id: 202, project_title: 'Example project PROD', in_production: 1 };
+  right.project = { ...right.project, project_id: 202, project_title: 'Example project PROD', in_production: 1, project_pi_lastname: 'Example-Comparison' };
   right.instruments[1].instrument_label = 'Samples';
   right.repeating = [];
   right.metadata[1].required_field = '';

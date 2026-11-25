@@ -11,8 +11,8 @@ test('identical complete schemas have no differences', () => {
 
 test('demo identifies expected project differences, field changes and missing repeating configuration', () => {
   const { left, right } = demoSnapshots(), report = compareSnapshots(left, right);
-  assert.equal(report.counts.project.entities, 3);
-  assert.ok(report.sections.project.filter(row => row.status === 'changed').every(row => row.expected));
+  assert.equal(report.counts.project.entities, 4);
+  assert.deepEqual(report.sections.project.filter(row => row.status === 'changed' && !row.expected).map(row => row.id), ['project_pi_lastname']);
   assert.equal(report.counts.metadata.entities, 2);
   assert.equal(report.sections.metadata.find(row => row.id === 'consent').changes[0].property, 'required_field');
   assert.equal(report.sections.metadata.find(row => row.id === 'rna_quality').status, 'reference-only');
