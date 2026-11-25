@@ -3,6 +3,10 @@ import { validateApiUrl } from './api.js';
 const storageKey = 'redcap-toolkit.projects.v1';
 const oldStorageKey = 'redcap-comparator.projects.v1';
 
+export function containsTokenShape(text) {
+  return /(?:^|[^\p{L}\p{N}])(?:[0-9a-fA-F]{32}|[0-9a-fA-F]{64})(?=$|[^\p{L}\p{N}])/u.test(text);
+}
+
 // Explicitly select safe configuration fields. Never save the token.
 export function writeProjects(storage, projects) {
   storage.setItem(storageKey, JSON.stringify(projects.map(({ id, label, expectedTitle, tags, apiUrl }) => ({ id, label, expectedTitle, tags, apiUrl }))));

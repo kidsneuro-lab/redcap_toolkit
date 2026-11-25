@@ -1,4 +1,4 @@
-import { readProjects, writeProjects } from './projects.js';
+import { containsTokenShape, readProjects, writeProjects } from './projects.js';
 import { isLocalHost, validateApiUrl } from './api.js';
 import { button, element } from './dom.js';
 import { icon } from './icons.js';
@@ -86,6 +86,9 @@ export function mountProjects(container, { trigger, hostname, storage, apiUrls =
     try {
       const project = { id: $('project-id').value || crypto.randomUUID(), label: $('label').value.trim(), expectedTitle: $('expected-title').value, tags: [...new Set($('tags').value.split(',').map(tag => tag.trim()).filter(Boolean))], apiUrl: validateApiUrl($('api-url').value.trim(), apiUrls), token: $('token').value.trim() };
       if (!project.label || !project.expectedTitle.trim()) throw new Error('Complete the label and expected title.');
+      for (const [field, values] of [['Display label', [project.label]], ['Expected REDCap project title', [project.expectedTitle]], ['Tags', project.tags]]) {
+        if (values.some(containsTokenShape)) throw new Error(`${field} contains text that looks like a REDCap token. Paste the token into the API token field.`);
+      }
       const existing = projects.findIndex(item => item.id === project.id);
       if (existing < 0) projects.push(project); else projects[existing] = project;
       $('project-form').reset(); $('project-form').hidden = true;

@@ -1,7 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readProjects, writeProjects } from '../src/projects.js';
+import { containsTokenShape, readProjects, writeProjects } from '../src/projects.js';
 import { fakeStorage } from './storage.js';
+
+test('token-shaped text contains a standalone run of exactly 32 or 64 hexadecimal characters', () => {
+  const token = '0123456789aBcDeF'.repeat(2);
+  for (const text of [token, `Study (${token}) follow-up`, `study_${token}_DEV`, token.repeat(2)]) {
+    assert.equal(containsTokenShape(text), true, text);
+  }
+  for (const text of [token.slice(1), `${token}0`, `${token.repeat(2)}0`, 'G'.repeat(32), `G${token}`, `${token}7`, `é${token}`, `${token}２`, 'Study 2026 (Phase 1)']) {
+    assert.equal(containsTokenShape(text), false, text);
+  }
+});
 
 test('saved project configurations round trip without tokens', () => {
   const storage = fakeStorage();
