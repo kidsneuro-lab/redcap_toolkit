@@ -6,3 +6,5 @@ dialog.offcanvas:not([open]) { display: none; }
 dialog.offcanvas::backdrop { background: rgb(24 36 51 / .5); }
 /* Notices and exported values keep their exact line breaks and spacing. */
 .text-pre-wrap { white-space: pre-wrap; }
+/* The token field is a text input so password managers ignore it and browsers do not restore it. This masks it as typed. */
+.token-mask { -webkit-text-security: disc; }

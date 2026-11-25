@@ -101,3 +101,14 @@ test('a saved project whose API URL is outside the allowlist is shown as blocked
   assert.ok(![...rows[0].descendants()].some(node => node.tagName === 'BUTTON' && node.textContent === 'Enter token'));
   assert.ok([...rows[1].descendants()].some(node => node.tagName === 'BUTTON' && node.textContent === 'Enter token'));
 });
+
+test('the token field is not a password field, so browsers do not offer to save or restore the token', () => {
+  const token = mountView().$('token');
+  assert.notEqual(token.type, 'password');
+  assert.deepEqual(Object.fromEntries(['autocomplete', 'autocapitalize', 'autocorrect', 'spellcheck', 'data-1p-ignore', 'data-lpignore', 'data-bwignore'].map(name => [name, token.getAttribute(name)])), { autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', 'data-1p-ignore': '', 'data-lpignore': 'true', 'data-bwignore': '' });
+});
+
+test('saved project fields have spellcheck off, so their text is not sent to a spellcheck service', () => {
+  const ui = mountView();
+  for (const id of ['label', 'expected-title', 'tags', 'api-url']) assert.equal(ui.$(id).getAttribute('spellcheck'), 'false', id);
+});
