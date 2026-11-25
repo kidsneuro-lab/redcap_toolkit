@@ -24,13 +24,15 @@ const template = `<dialog id="projects-drawer" class="offcanvas offcanvas-end" a
 </dialog>`;
 
 // The toolkit-level Projects drawer, opened from its button in the trigger slot. It owns saved project configuration and the session tokens.
-export function mountProjects(container, { trigger, hostname, storage, notice }) {
+export function mountProjects(container, { trigger, hostname, storage, apiUrls = null, notice }) {
   container.innerHTML = template;
   trigger.innerHTML = triggerTemplate;
   const $ = id => container.querySelector(`#${id}`) || trigger.querySelector(`#${id}`);
   const listeners = [];
   let projects = [];
 
+  // A saved project may predate the allowlist. It stays listed so it can be edited or removed, but cannot take a token.
+  const permitted = apiUrl => { try { validateApiUrl(apiUrl, apiUrls); return true; } catch { return false; } };
   const current = () => projects.map(project => ({ ...project, tags: [...project.tags] }));
   function changed() {
     try { writeProjects(storage, projects); } catch { notice('Browser storage is unavailable. Configuration will only be available in this session.'); }
@@ -47,9 +49,10 @@ export function mountProjects(container, { trigger, hostname, storage, notice })
       const row = element('div', undefined, 'list-group-item'), info = element('div');
       info.append(element('div', project.label, 'fw-bold'));
       for (const tag of project.tags) info.append(element('span', tag, 'badge bg-secondary-lt me-1'));
-      info.append(element('div', `${project.token ? 'Token available for this session' : 'Token needed'} · ${project.apiUrl}`, 'text-secondary small text-break'));
+      const blocked = !permitted(project.apiUrl);
+      info.append(element('div', `${blocked ? 'Blocked: this API URL is not permitted on this site' : project.token ? 'Token available for this session' : 'Token needed'} · ${project.apiUrl}`, `${blocked ? 'text-danger' : 'text-secondary'} small text-break`));
       const actions = element('div', undefined, 'd-flex flex-wrap gap-2 mt-2');
-      if (!project.token) actions.append(button('Enter token', () => { edit(project); $('token').focus(); }, 'btn btn-sm btn-outline-warning'));
+      if (!project.token && !blocked) actions.append(button('Enter token', () => { edit(project); $('token').focus(); }, 'btn btn-sm btn-outline-warning'));
       actions.append(button('Edit', () => edit(project), 'btn btn-sm'), button('Remove', () => {
         projects = projects.filter(item => item.id !== project.id);
         if ($('project-id').value === project.id) $('project-form').hidden = true;
@@ -81,7 +84,7 @@ export function mountProjects(container, { trigger, hostname, storage, notice })
   $('project-form').addEventListener('submit', event => {
     event.preventDefault();
     try {
-      const project = { id: $('project-id').value || crypto.randomUUID(), label: $('label').value.trim(), expectedTitle: $('expected-title').value, tags: [...new Set($('tags').value.split(',').map(tag => tag.trim()).filter(Boolean))], apiUrl: validateApiUrl($('api-url').value.trim()), token: $('token').value.trim() };
+      const project = { id: $('project-id').value || crypto.randomUUID(), label: $('label').value.trim(), expectedTitle: $('expected-title').value, tags: [...new Set($('tags').value.split(',').map(tag => tag.trim()).filter(Boolean))], apiUrl: validateApiUrl($('api-url').value.trim(), apiUrls), token: $('token').value.trim() };
       if (!project.label || !project.expectedTitle.trim()) throw new Error('Complete the label and expected title.');
       const existing = projects.findIndex(item => item.id === project.id);
       if (existing < 0) projects.push(project); else projects[existing] = project;

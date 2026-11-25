@@ -49,6 +49,22 @@ test('server handler serves actual HTML and modules with a restrictive file allo
   });
 });
 
+test('with an allowlist, the served page and both of its policies permit connections only to the listed REDCap origins', async () => {
+  const allowedUrls = ['https://redcap.example.org/api/', 'https://redcap.example.org/other/api/', 'https://second.example.org/api/'];
+  await withServer({ allowedUrls }, async (base, send) => {
+    const response = await send(base), html = await response.text();
+    const connect = policy => policy.match(/connect-src ([^;]+)/)[1];
+    assert.equal(connect(response.headers.get('content-security-policy')), "'self' https://redcap.example.org https://second.example.org");
+    assert.equal(connect(html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1]), "'self' https://redcap.example.org https://second.example.org");
+    assert.match(html, /<meta name="redcap-api-urls" content="https:\/\/redcap.example.org\/api\/ https:\/\/redcap.example.org\/other\/api\/ https:\/\/second.example.org\/api\/">/);
+  });
+  await withServer({}, async (base, send) => {
+    const response = await send(base), html = await response.text();
+    assert.equal(html, await readFile(new URL('../index.html', import.meta.url), 'utf8'));
+    assert.match(response.headers.get('content-security-policy'), /connect-src 'self' https:;/);
+  });
+});
+
 test('proxy permits only configured HTTPS targets, export operations and same-origin submissions', async () => {
   const target = 'https://redcap.example.org/api/'; let calls = 0;
   await withServer({ allowedUrls: [target], fetcher: async (url, options) => {

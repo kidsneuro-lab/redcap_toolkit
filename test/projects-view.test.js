@@ -4,21 +4,21 @@ import { installDocument } from './dom.js';
 import { fakeStorage } from './storage.js';
 import { mountProjects } from '../src/projects-view.js';
 
-function mountView(saved, hostname = '127.0.0.1') {
+function mountView(saved, hostname = '127.0.0.1', apiUrls = null) {
   const document = installDocument();
   const container = document.createElement('div'), trigger = document.createElement('div');
   const storage = fakeStorage(saved === undefined ? {} : { 'redcap-toolkit.projects.v1': JSON.stringify(saved) });
   const notices = [];
-  const view = mountProjects(container, { trigger, hostname, storage, notice: (message, error = false) => notices.push({ message, error }) });
+  const view = mountProjects(container, { trigger, hostname, storage, apiUrls, notice: (message, error = false) => notices.push({ message, error }) });
   const $ = id => { const node = container.querySelector(`#${id}`) || trigger.querySelector(`#${id}`); assert.ok(node, `Unknown element: ${id}`); return node; };
-  const save = (label, tags = '', token = 'synthetic-secret') => {
+  const fill = (label, tags = '', token = 'synthetic-secret', apiUrl = 'https://demo.invalid/api/') => {
     $('new-project').click();
-    for (const [id, value] of Object.entries({ label, 'expected-title': label, tags, 'api-url': 'https://demo.invalid/api/', token })) $(id).value = value;
+    for (const [id, value] of Object.entries({ label, 'expected-title': label, tags, 'api-url': apiUrl, token })) $(id).value = value;
     $('project-form').dispatch('submit');
-    assert.equal($('form-error').textContent, '');
   };
+  const save = (...args) => { fill(...args); assert.equal($('form-error').textContent, ''); };
   const button = text => [...container.descendants()].find(node => node.tagName === 'BUTTON' && node.textContent === text);
-  return { view, $, save, button, notices, stored: () => JSON.parse(storage.getItem('redcap-toolkit.projects.v1')) };
+  return { view, $, fill, save, button, notices, stored: () => JSON.parse(storage.getItem('redcap-toolkit.projects.v1')) };
 }
 
 test('saved projects keep normalised tags and their session tokens, and tokens are never stored', () => {
@@ -84,4 +84,20 @@ test('the proxy switch is offered only when the page is served locally, and is o
     assert.equal(ui.$('proxy-setting').hidden, true, hostname);
     assert.equal(ui.view.proxy(), false);
   }
+});
+
+test('a project cannot be saved with an API URL outside the allowlist', () => {
+  const ui = mountView(undefined, '127.0.0.1', ['https://redcap.example.org/api/']);
+  ui.fill('Elsewhere', '', 'synthetic-secret', 'https://evil.example.net/api/');
+  assert.match(ui.$('form-error').textContent, /not on this site's list of permitted REDCap API URLs/);
+  assert.equal(ui.stored(), null);
+  assert.deepEqual(ui.view.projects(), []);
+});
+
+test('a saved project whose API URL is outside the allowlist is shown as blocked and offers no token entry', () => {
+  const ui = mountView([{ id: 'elsewhere', label: 'Elsewhere', expectedTitle: 'Elsewhere', tags: [], apiUrl: 'https://evil.example.net/api/' }, { id: 'listed', label: 'Listed', expectedTitle: 'Listed', tags: [], apiUrl: 'https://redcap.example.org/api/' }], '127.0.0.1', ['https://redcap.example.org/api/']);
+  const rows = [...ui.$('project-list').children], text = row => [...row.descendants()].map(node => node.textContent).join(' ');
+  assert.match(text(rows[0]), /Blocked: this API URL is not permitted on this site/);
+  assert.ok(![...rows[0].descendants()].some(node => node.tagName === 'BUTTON' && node.textContent === 'Enter token'));
+  assert.ok([...rows[1].descendants()].some(node => node.tagName === 'BUTTON' && node.textContent === 'Enter token'));
 });

@@ -8,7 +8,7 @@ import compareView from '../src/compare-view.js';
 const project = (id, label, tags = []) => ({ id, label, expectedTitle: label, tags, apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
 
 // Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch, keyed by token.
-function mountTool(projects, { proxy = false } = {}) {
+function mountTool(projects, { proxy = false, apiUrls = null } = {}) {
   const document = installDocument();
   const container = document.createElement('div');
   const { left } = demoSnapshots();
@@ -23,6 +23,7 @@ function mountTool(projects, { proxy = false } = {}) {
     projects: () => projects.map(item => ({ ...item })),
     onProjectsChange: () => {},
     proxy: () => proxy,
+    apiUrls,
     notice: (message, error = false) => calls.notices.push({ message, error }),
     showProjects: (...args) => calls.shown.push(args),
     setBusy: busy => calls.busy.push(busy)
@@ -96,4 +97,13 @@ test('Manage projects and Set up projects open the Projects drawer through the t
   await ui.$('manage').click();
   await ui.$('empty-add').click();
   assert.deepEqual(ui.calls.shown, [[], [true, { addIfEmpty: true }]]);
+});
+
+test('a project whose API URL is outside the allowlist is never sent a request, and the comparison is incomplete', async () => {
+  const ui = mountTool([project('one', 'First'), { ...project('two', 'Second'), apiUrl: 'https://evil.example.net/api/' }], { apiUrls: ['https://demo.invalid/api/'] });
+  ui.select('one', 'two');
+  await ui.$('compare').click();
+  assert.ok(ui.requests.every(([id]) => id !== 'two'));
+  assert.match(ui.lastNotice().message, /Second: This API URL is not on this site's list of permitted REDCap API URLs/);
+  assert.equal(ui.$('report').hidden, true);
 });
