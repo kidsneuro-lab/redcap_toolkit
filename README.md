@@ -20,6 +20,8 @@ Use the **Projects** button in the navbar to add each project. It shows how many
 
 Project configuration, including tags, is saved in browser local storage. Existing phase/group and environment labels are loaded as tags and saved in that format on the next configuration change. Configuration saved by earlier versions under `redcap-comparator.projects.v1` moves to `redcap-toolkit.projects.v1` on the next load; the old entry is removed only after the new one is saved. Tokens are kept in memory and must be entered again after a reload. The token field is masked but is not a password field, has autocomplete off and asks common password manager extensions to ignore it, so that it is not saved with your passwords. Spellcheck is off in every project field, so their text is not sent to a cloud spellcheck service. Tokens are excluded from saved configuration and downloaded reports. Project removal is immediate. Use the same host and port to return to the same browser configuration.
 
+The Projects form refuses to save a display label, expected title or tag containing a standalone run of exactly 32 or 64 hexadecimal characters. Paste REDCap tokens into the **API token** field.
+
 ## Direct API access and the optional proxy
 
 The default mode sends form-encoded HTTPS POST requests directly from the browser to REDCap. Your REDCap installation must permit the app's origin through CORS. The app cannot bypass browser restrictions. Serve the page over HTTP locally or HTTPS internally; do not open `index.html` as a file.

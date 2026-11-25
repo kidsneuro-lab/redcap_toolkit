@@ -33,6 +33,33 @@ test('saved projects keep normalised tags and their session tokens, and tokens a
   assert.deepEqual(changes, [1, 2]);
 });
 
+test('the Projects form rejects token-shaped labels, expected titles and tags without changing configuration', async t => {
+  const token = '0123456789abcdef'.repeat(2);
+  for (const [field, value, name] of [
+    ['label', token, 'Display label'],
+    ['expected-title', `Study (${token})`, 'Expected REDCap project title'],
+    ['tags', `DEV, ${token.repeat(2)}, Study`, 'Tags']
+  ]) {
+    await t.test(name, () => {
+      const ui = mountView();
+      ui.save('Synthetic study', 'DEV', token);
+      const before = ui.stored();
+      assert.deepEqual(before.map(({ label, expectedTitle, tags }) => ({ label, expectedTitle, tags })), [{ label: 'Synthetic study', expectedTitle: 'Synthetic study', tags: ['DEV'] }]);
+      assert.equal(ui.view.projects()[0].token, token);
+      ui.button('Edit').click();
+      ui.$(field).value = value;
+      ui.$('project-form').dispatch('submit');
+      const error = ui.$('form-error').textContent;
+      assert.ok(error.includes(name));
+      assert.match(error, /API token/);
+      assert.ok(!error.includes(token));
+      assert.equal(ui.$('project-form').hidden, false);
+      assert.deepEqual(ui.stored(), before);
+      assert.deepEqual(ui.view.projects(), [{ ...before[0], token }]);
+    });
+  }
+});
+
 test('old group and environment labels load as tags, keep project details and discard saved tokens', () => {
   const ui = mountView([{ id: 'legacy', label: 'Existing', expectedTitle: 'Existing title', phase: 'Phase 1', environment: 'PROD', apiUrl: 'https://demo.invalid/api/', token: 'must-not-load' }]);
   assert.deepEqual(ui.view.projects().map(project => [project.tags, project.token]), [[['Phase 1', 'PROD'], '']]);
