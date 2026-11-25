@@ -8,7 +8,7 @@ import templateView from '../src/template-view.js';
 const project = (id, label, extras = {}) => ({ id, label, expectedTitle: label, tags: [], apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret`, ...extras });
 
 // Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch, keyed by token.
-function mountTool(projects, { title } = {}) {
+function mountTool(projects, { title, apiUrls = null } = {}) {
   const document = installDocument();
   const container = document.createElement('div');
   const { left } = demoSnapshots();
@@ -23,6 +23,7 @@ function mountTool(projects, { title } = {}) {
     projects: () => projects.map(item => ({ ...item })),
     onProjectsChange: listener => listeners.push(listener),
     proxy: () => false,
+    apiUrls,
     notice: (message, error = false) => calls.notices.push({ message, error }),
     showProjects: (...args) => calls.shown.push(args),
     setBusy: busy => calls.busy.push(busy)
@@ -120,4 +121,12 @@ test('entering the missing token in Projects loads the waiting project', async (
   await ui.projectsChanged();
   assert.equal(ui.requests[0], 'project');
   assert.equal(ui.$('instrument').disabled, false);
+});
+
+test('a project whose API URL is outside the allowlist is never sent a request, and no template is produced', async () => {
+  const ui = mountTool([project('one', 'First', { apiUrl: 'https://evil.example.net/api/' })], { apiUrls: ['https://demo.invalid/api/'] });
+  await ui.choose('project', 'one');
+  assert.deepEqual(ui.requests, []);
+  assert.match(ui.$('project-status').textContent, /not on this site's list of permitted REDCap API URLs\. No template has been produced\./);
+  assert.equal(ui.$('instrument').disabled, true);
 });

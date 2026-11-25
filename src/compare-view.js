@@ -83,7 +83,7 @@ function mount(container, toolkit) {
     try {
       const snapshots = [{}, {}], timings = [{}, {}];
       const request = async (i, section) => {
-        const value = await fetchExport(configs[i], section, { signal, proxy: toolkit.proxy() });
+        const value = await fetchExport(configs[i], section, { signal, proxy: toolkit.proxy(), allowed: toolkit.apiUrls });
         timings[i][section] = new Date().toISOString(); return value;
       };
       const infoResults = await Promise.allSettled(configs.map((_, i) => request(i, 'project')));

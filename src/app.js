@@ -7,8 +7,10 @@ import templateView from './template-view.js';
 // Startup only. This is the one module that looks up elements from the page.
 const $ = id => document.getElementById(id);
 const showNotice = (message, error = false) => notice($('notice'), message, error);
-const projects = mountProjects($('projects'), { trigger: $('projects-trigger'), hostname: location.hostname, storage: localStorage, notice: showNotice });
-const toolkit = { projects: projects.projects, onProjectsChange: projects.onProjectsChange, proxy: projects.proxy, notice: showNotice, showProjects: projects.show, setBusy: projects.setBusy };
+// The API URLs a token may be sent to, when the server that published the page lists them. Without the list, any HTTPS URL.
+const apiUrls = document.querySelector('meta[name="redcap-api-urls"]')?.content.split(' ').filter(Boolean) ?? null;
+const projects = mountProjects($('projects'), { trigger: $('projects-trigger'), hostname: location.hostname, storage: localStorage, apiUrls, notice: showNotice });
+const toolkit = { projects: projects.projects, onProjectsChange: projects.onProjectsChange, proxy: projects.proxy, apiUrls, notice: showNotice, showProjects: projects.show, setBusy: projects.setBusy };
 // Schema comparison is listed first, so it is the default route. A new Tool is one more entry here.
 const router = mountRouter({ nav: $('tool-links'), outlet: $('tools'), tools: [compareView, templateView], toolkit });
 

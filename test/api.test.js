@@ -38,6 +38,18 @@ test('network failures on a hosted site suggest running locally with the proxy',
   for (const hostname of ['h-joshi.github.io', '127.0.0.1.example.org']) await assert.rejects(fetchExport(config, 'metadata', { hostname, fetcher: fail }), { message: 'This REDCap may not allow requests from this site. Run the toolkit locally with the proxy (see README).' }, hostname);
   for (const hostname of ['127.0.0.1', 'localhost']) await assert.rejects(fetchExport(config, 'metadata', { hostname, fetcher: fail }), /Could not read metadata/, hostname);
 });
+test('an API URL outside the allowlist never receives a request carrying the token', async () => {
+  let calls = 0;
+  const fetcher = async () => { calls++; return Response.json({}); };
+  await assert.rejects(fetchExport({ ...config, apiUrl: 'https://evil.example.net/api/' }, 'project', { allowed: ['https://redcap.example.org/api/'], fetcher }), /not on this site's list of permitted REDCap API URLs/);
+  assert.equal(calls, 0);
+});
+test('an allowlisted API URL is accepted however its trailing slash and host case are written', async () => {
+  for (const apiUrl of ['https://redcap.example.org/api/', 'https://redcap.example.org/api', 'https://REDCap.Example.org/api/']) {
+    const value = await fetchExport({ ...config, apiUrl }, 'project', { allowed: ['https://redcap.example.org/api/'], fetcher: async () => Response.json({ project_title: 'DEV', project_id: 1 }) });
+    assert.equal(value.project_id, 1, apiUrl);
+  }
+});
 test('API URL validation rejects insecure endpoints and embedded credentials', () => {
   for (const url of ['http://example.org/api/', 'https://user:password@example.org/api/', 'https://example.org/api/?token=secret', 'https://example.org/api/#token']) assert.throws(() => validateApiUrl(url));
 });

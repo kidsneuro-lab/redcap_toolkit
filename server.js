@@ -14,14 +14,21 @@ export async function publishSite(dir) {
   }
 }
 const permittedExports = new Set(['project', 'instrument', 'metadata', 'repeatingFormsEvents', 'exportFieldNames']);
-const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+// With allowed API URLs, the page may connect only to their origins. Without, to any HTTPS host, as direct access needs.
+const connectSources = urls => urls.length ? ["'self'", ...new Set(urls.map(url => new URL(url).origin))].join(' ') : "'self' https:";
+const csp = urls => `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src ${connectSources(urls)}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`;
+// The page with the allowed API URLs for the app to enforce and its meta policy narrowed to match. Unchanged without any.
+export function pageWithAllowlist(html, urls) {
+  if (!urls.length) return html;
+  return html.replace(/connect-src [^;]+;/, `connect-src ${connectSources(urls)};`).replace('<meta name="referrer"', `<meta name="redcap-api-urls" content="${urls.join(' ')}">\n  <meta name="referrer"`);
+}
 
 export function createAppServer({ allowedUrls = [], fetcher = fetch } = {}) {
-  const allowed = new Set(allowedUrls.map(value => validateApiUrl(value)));
+  const allowed = new Set(allowedUrls.map(value => validateApiUrl(value))), policy = csp([...allowed]);
   return http.createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('X-Content-Type-Options', 'nosniff');
-    response.setHeader('Content-Security-Policy', csp);
+    response.setHeader('Content-Security-Policy', policy);
     response.setHeader('Referrer-Policy', 'no-referrer');
     const send = (status, message) => { response.writeHead(status, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ error: message })); };
     const port = request.socket.localPort;
@@ -55,7 +62,7 @@ export function createAppServer({ allowedUrls = [], fetcher = fetch } = {}) {
     const file = staticFiles.get(path);
     if (!file) return send(404, 'Not found.');
     try {
-      const content = await readFile(resolve(root, file[0]));
+      const content = file[0] === 'index.html' ? pageWithAllowlist(await readFile(resolve(root, file[0]), 'utf8'), [...allowed]) : await readFile(resolve(root, file[0]));
       response.writeHead(200, { 'Content-Type': `${file[1]}; charset=utf-8` }); response.end(request.method === 'HEAD' ? undefined : content);
     } catch { send(500, 'Could not read application file.'); }
   });

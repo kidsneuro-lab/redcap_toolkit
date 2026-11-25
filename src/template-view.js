@@ -95,7 +95,7 @@ function mount(container, toolkit) {
     if (!config.token) { toolkit.showProjects(); return status('Enter an API token for this project with Enter token in Projects. Tokens are required again after a page reload.', 'alert alert-warning mb-0'); }
     status('Checking project identity, then reading metadata…');
     try {
-      const request = section => fetchExport(config, section, { proxy: toolkit.proxy() });
+      const request = section => fetchExport(config, section, { proxy: toolkit.proxy(), allowed: toolkit.apiUrls });
       const project = await request('project');
       const issues = validateIdentity(config, project);
       if (issues.length) throw new Error(issues.join(' '));

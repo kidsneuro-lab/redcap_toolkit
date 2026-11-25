@@ -1,12 +1,16 @@
+import { endpointKey } from './identity.js';
+
 export const exportsBySection = { project: 'project', instruments: 'instrument', repeating: 'repeatingFormsEvents', metadata: 'metadata', fieldNames: 'exportFieldNames' };
 
 // The local server and its proxy are available only when the page is served from loopback.
 export const isLocalHost = hostname => ['127.0.0.1', 'localhost'].includes(hostname);
 
-export function validateApiUrl(value) {
+// Without an allowed list, any HTTPS URL is accepted. With one, only its URLs are, so a token cannot be sent anywhere else.
+export function validateApiUrl(value, allowed) {
   const url = new URL(value);
   if (url.protocol !== 'https:') throw new Error('Use an HTTPS REDCap API URL.');
   if (url.username || url.password || url.search || url.hash) throw new Error('The API URL must not contain credentials, a query or a fragment.');
+  if (allowed && !allowed.some(item => endpointKey(item) === endpointKey(url.href))) throw new Error("This API URL is not on this site's list of permitted REDCap API URLs.");
   return url.href;
 }
 
@@ -23,8 +27,8 @@ export function validateResponse(section, value) {
   return value;
 }
 
-export async function fetchExport(config, section, { signal, proxy = false, fetcher = fetch, hostname = globalThis.location?.hostname } = {}) {
-  const apiUrl = validateApiUrl(config.apiUrl);
+export async function fetchExport(config, section, { signal, proxy = false, allowed, fetcher = fetch, hostname = globalThis.location?.hostname } = {}) {
+  const apiUrl = validateApiUrl(config.apiUrl, allowed);
   const body = new URLSearchParams({ token: config.token, content: exportsBySection[section], format: 'json', returnFormat: 'json' });
   if (proxy) body.set('apiUrl', apiUrl);
   let response;
