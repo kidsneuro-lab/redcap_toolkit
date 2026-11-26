@@ -4,6 +4,8 @@ A single-page app using HTML, CSS and plain JavaScript, with read-only tools for
 
 The interface uses [Tabler](https://tabler.io) 1.7.5 CSS, vendored in `vendor/tabler/1.7.5/` with its MIT licence (sha384 `BY4EnLpEeqBnDZno/u4SjmwHqbv1/U9as69Q0Jk/zeaDJ8iV10NK7FP+6fFEGW4i`). Tabler's JavaScript is not used. The few icons are inline outline SVGs from `@tabler/icons` 3.52.0, whose MIT licence is in `vendor/tabler-icons/3.52.0/`.
 
+The **FAQ** page, linked beside Projects, shows [FAQ.md](FAQ.md): the REDCap version the toolkit was tested against, common errors and a summary of its security measures.
+
 Supported browsers: Chrome and Edge 123, Firefox 128 and Safari 17.5 or later. Tabler's CSS relies on `light-dark()`, `:has()`, `color-mix()` and relative colours without fallbacks.
 
 ## Run locally
@@ -51,7 +53,7 @@ The other exports return project schema and settings only. The Records export, u
 
 Every push to `main` that passes the **Test** workflow is released to GitHub Pages by the **Release** workflow, which can also be run manually. It publishes exactly the files in the static-file allowlist in `server.js`, so a new browser module or asset must be added there. Pages must be enabled with **GitHub Actions** as the source.
 
-- **Public site from a private repository.** The published site is public even though the repository is private. The page holds no secrets; tokens exist only in the visitor's browser memory.
+- **Public site and repository.** The published site and its source repository are both public, so the FAQ's links to this README work for anyone. The page holds no secrets; tokens exist only in the visitor's browser memory.
 - **Fewer security headers.** Pages cannot send custom headers, so the Content Security Policy and `no-referrer` policy are set with `<meta>` tags in `index.html`. `frame-ancestors` and `X-Content-Type-Options: nosniff` cannot be set this way, so the hosted page can be framed by other sites and does not have MIME sniffing disabled. The local server sends the full headers.
 - **Shared browser storage.** Every Pages site under the same `<account>.github.io` origin shares local storage, so another Pages site on the account could read saved project configuration (labels, expected titles, API URLs and tags, never tokens). Expected titles may be sensitive. Do not host untrusted Pages sites under the same account.
 - **No proxy.** The **Use local proxy** switch is hidden on the hosted page. If a request fails at the network level there, the page says "This REDCap may not allow requests from this site. Run the toolkit locally with the proxy (see README)." In that case follow [Direct API access and the optional proxy](#direct-api-access-and-the-optional-proxy).
@@ -123,14 +125,15 @@ The record is shown as one block per instrument, in instrument order, with field
 npm test
 ```
 
-The dependency-free tests cover comparison semantics, Upload template column rules, Data dictionary filter, search, choice and sort rules, Record viewer blocks, values and absent fields, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison, Upload template, Data dictionary and Record viewer into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
+The dependency-free tests cover comparison semantics, Upload template column rules, Data dictionary filter, search, choice and sort rules, Record viewer blocks, values and absent fields, FAQ markdown parsing, including that `FAQ.md` uses only the supported syntax, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison, Upload template, Data dictionary, Record viewer and the FAQ page into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
 ## Files
 
+- `FAQ.md`: the FAQ page's content, fetched by the page at runtime. Only the markdown listed in its opening comment is supported.
 - `index.html` and `toolkit.css`: single-page interface. `toolkit.css` holds the few rules the vendored Tabler CSS lacks.
 - `vendor/`: Tabler CSS and the Tabler and Tabler Icons licences.
 - `src/app.js`: startup only. Mounts the Projects drawer and the router and connects Tools through `toolkit`.
-- `src/router.js`: hash routes and navbar links. Each Tool is mounted on its first visit, then hidden and shown, and a Tool that asks is told when it is hidden; unknown routes open Schema comparison.
+- `src/router.js`: hash routes and navbar links. Each Tool, and the FAQ page, is mounted on its first visit, then hidden and shown, and a Tool that asks is told when it is hidden; unknown routes open Schema comparison.
 - `src/theme.js`: sets the light or dark theme before first paint. A classic script, because the CSP blocks inline scripts.
 - `src/projects-view.js`: the Projects button and drawer: saved project configuration, session tokens and the proxy switch.
 - `src/icons.js`: inline Tabler icons used by the views.
@@ -138,11 +141,13 @@ The dependency-free tests cover comparison semantics, Upload template column rul
 - `src/template-view.js`: the Upload template Tool: identity check, exports, field selection, preview and CSV download.
 - `src/dictionary-view.js`: the Data dictionary Tool: identity check, exports, instrument selection, filter, search and sorting.
 - `src/record-view.js`: the Record viewer Tool: identity check, exports, record lookup, empty field and identifier toggles, and clearing the record.
+- `src/faq-view.js`: the FAQ page: fetches `FAQ.md` and shows it as text-only elements.
 - `src/dom.js`: small DOM helpers used by the views.
 - `src/compare.js`: pure comparison rules.
 - `src/template.js`: pure Upload template column rules and CSV serialisation.
 - `src/dictionary.js`: pure Data dictionary rules: which fields are shown, choice parsing, search and sort order.
 - `src/record.js`: pure Record viewer rules: blocks per instrument and instance, values with labels, and absent versus empty fields.
+- `src/faq.js`: pure FAQ rules: the supported markdown subset, allowed links and reporting of unsupported syntax.
 - `src/identity.js`: pure project identity rules.
 - `src/projects.js`: reading and writing saved project configuration, with storage passed in.
 - `src/api.js`: API requests and response validation.

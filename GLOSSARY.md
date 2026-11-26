@@ -20,6 +20,10 @@ _Avoid_: Import template, samplesheet
 The Tool that shows the fields of selected instruments in a configured project, with their types, choices and limits, so values can be entered correctly.
 _Avoid_: Codebook, field list
 
+**FAQ page**:
+A page, not a Tool, linked beside Projects, that shows the answers in `FAQ.md` to common questions about compatibility, errors and security.
+_Avoid_: Help Tool, docs
+
 **Project configuration**:
 A saved description of one REDCap project: display label, expected title, API URL and optional tags. It never includes the API token.
 _Avoid_: Connection, profile

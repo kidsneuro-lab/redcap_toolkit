@@ -117,7 +117,8 @@ test('proxy strips remote error text rather than leaking credentials', async () 
   });
 });
 
-// The files the page actually loads: index.html's script and stylesheet references, then each module's relative imports.
+// The files the page actually loads: index.html's script and stylesheet references, then each module's relative imports
+// and the files it fetches by a path relative to the page, such as FAQ.md.
 async function pageFiles() {
   const files = new Set(), pending = [];
   const add = (from, ref) => { const file = posix.join(posix.dirname(from), ref); if (!files.has(file)) { files.add(file); pending.push(file); } };
@@ -126,6 +127,7 @@ async function pageFiles() {
     const file = pending.pop(), text = await readFile(new URL(`../${file}`, import.meta.url), 'utf8');
     if (file.endsWith('.html')) for (const [, ref] of text.matchAll(/<(?:script|link)\b[^>]*?(?:src|href)="([^"]+)"/g)) add(file, ref);
     if (file.endsWith('.js')) for (const [, ref] of text.matchAll(/^import\b[^'"]*['"](\.[^'"]+)['"]/gm)) add(file, ref);
+    if (file.endsWith('.js')) for (const [, ref] of text.matchAll(/\bfetch\('([^'/][^']*)'/g)) add('', ref);
   }
   return [...files].sort();
 }

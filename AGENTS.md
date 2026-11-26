@@ -12,7 +12,7 @@
 
 ## Scope and sources
 
-This app has four Tools for classic REDCap projects, without longitudinal events or arms: Schema comparison compares the schemas of any two projects, Upload template produces a header-only CSV for importing data into one instrument, Data dictionary shows the fields of selected instruments for correct data entry, and Record viewer shows one entered record across all instruments.
+This app has four Tools for classic REDCap projects, without longitudinal events or arms: Schema comparison compares the schemas of any two projects, Upload template produces a header-only CSV for importing data into one instrument, Data dictionary shows the fields of selected instruments for correct data entry, and Record viewer shows one entered record across all instruments. A FAQ page, which is not a Tool, shows `FAQ.md`.
 
 - Preserve the single-page HTML, CSS and plain JavaScript implementation. Keep it buildless, with the vendored Tabler CSS in `vendor/` as its only third-party file and no Tabler JavaScript, unless the user requests a change that warrants another approach.
 - Read [README.md](README.md) before changing setup, deployment, storage or report behaviour. Use `package.json` as the source of truth for runnable commands.
@@ -27,10 +27,12 @@ This app has four Tools for classic REDCap projects, without longitudinal events
 
 ## Implementation boundaries
 
-- Keep comparison rules in `src/compare.js`, Upload template column rules in `src/template.js`, Data dictionary rules in `src/dictionary.js`, Record viewer rules in `src/record.js` and identity rules in `src/identity.js`, all independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
-- Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, comparison orchestration, filters and report downloads in `src/compare-view.js`, Upload template orchestration, field selection and CSV downloads in `src/template-view.js`, Data dictionary orchestration, instrument selection, filter, search and sorting in `src/dictionary-view.js`, and Record viewer orchestration, record lookup, toggles and clearing in `src/record-view.js`.
+- Keep comparison rules in `src/compare.js`, Upload template column rules in `src/template.js`, Data dictionary rules in `src/dictionary.js`, Record viewer rules in `src/record.js`, FAQ markdown rules in `src/faq.js` and identity rules in `src/identity.js`, all independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
+- Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, comparison orchestration, filters and report downloads in `src/compare-view.js`, Upload template orchestration, field selection and CSV downloads in `src/template-view.js`, Data dictionary orchestration, instrument selection, filter, search and sorting in `src/dictionary-view.js`, Record viewer orchestration, record lookup, toggles and clearing in `src/record-view.js`, and the FAQ page in `src/faq-view.js`.
 - Each Tool view exports `{ id, title, mount(container, toolkit) }`, where `mount` may return `{ leave }` for state that must be cleared when the Tool is hidden, and reaches projects, tokens, notices and the Projects area only through `toolkit`. Views touch the DOM only inside `mount`. `src/app.js` is startup only and the one module that looks up elements from the page.
 - Keep `server.js` optional for static hosting. When adding a browser module or asset, update its explicit static-file allowlist so the local server can serve it.
+- Pages that are not Tools, such as the FAQ, are passed to the router as `pages` and linked beside Projects, not in the Tools menu.
+- Keep `FAQ.md` within the markdown subset listed in its opening comment. Render it as text-only elements, never as HTML, and allow only HTTPS, relative and `#/` route links.
 - Render exported labels, logic, annotations and HTML as text. Preserve keyboard access and explicit reference and comparison labels.
 
 ## Comparison rules
