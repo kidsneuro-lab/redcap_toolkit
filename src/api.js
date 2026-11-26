@@ -1,6 +1,8 @@
 import { endpointKey } from './identity.js';
 
-export const exportsBySection = { project: 'project', instruments: 'instrument', repeating: 'repeatingFormsEvents', metadata: 'metadata', fieldNames: 'exportFieldNames' };
+export const exportsBySection = { project: 'project', instruments: 'instrument', repeating: 'repeatingFormsEvents', metadata: 'metadata', fieldNames: 'exportFieldNames', record: 'record' };
+// The fixed parameters of a record export. It also always names exactly one record, so neither the app nor the proxy can export a whole project.
+export const recordParameters = { type: 'flat', rawOrLabel: 'raw' };
 
 // The local server and its proxy are available only when the page is served from loopback.
 export const isLocalHost = hostname => ['127.0.0.1', 'localhost'].includes(hostname);
@@ -19,7 +21,7 @@ export function validateResponse(section, value) {
     if (!value || Array.isArray(value) || typeof value !== 'object' || typeof value.project_title !== 'string') throw new Error('Project Info returned an unexpected response.');
   } else {
     if (!Array.isArray(value) || value.some(row => !row || typeof row !== 'object' || Array.isArray(row))) throw new Error(`${section} returned an unexpected response.`);
-    const required = { instruments: ['instrument_name'], metadata: ['field_name'], repeating: ['form_name'], fieldNames: ['original_field_name', 'export_field_name'] }[section];
+    const required = { instruments: ['instrument_name'], metadata: ['field_name'], repeating: ['form_name'], fieldNames: ['original_field_name', 'export_field_name'], record: [] }[section];
     for (const name of required) if (value.some(row => typeof row[name] !== 'string' || !row[name])) throw new Error(`${section} contains a missing ${name}.`);
     if (section === 'metadata' && (!value.length || value.some(row => typeof row.form_name !== 'string' || !row.form_name))) throw new Error('Metadata must contain fields and instrument names.');
     if (['instruments', 'fieldNames'].includes(section) && !value.length) throw new Error(`The ${section === 'instruments' ? 'instrument' : 'field names'} export was unexpectedly empty.`);
@@ -27,9 +29,10 @@ export function validateResponse(section, value) {
   return value;
 }
 
-export async function fetchExport(config, section, { signal, proxy = false, allowed, fetcher = fetch, hostname = globalThis.location?.hostname } = {}) {
+export async function fetchExport(config, section, { record, signal, proxy = false, allowed, fetcher = fetch, hostname = globalThis.location?.hostname } = {}) {
+  if (section === 'record' ? typeof record !== 'string' || !record.trim() : record !== undefined) throw new Error(section === 'record' ? 'Enter a record ID.' : 'Only a record export names a record.');
   const apiUrl = validateApiUrl(config.apiUrl, allowed);
-  const body = new URLSearchParams({ token: config.token, content: exportsBySection[section], format: 'json', returnFormat: 'json' });
+  const body = new URLSearchParams({ token: config.token, content: exportsBySection[section], format: 'json', returnFormat: 'json', ...(section === 'record' && { ...recordParameters, 'records[0]': record }) });
   if (proxy) body.set('apiUrl', apiUrl);
   let response;
   try {
