@@ -127,8 +127,13 @@ npm test
 
 The dependency-free tests cover comparison semantics, Upload template column rules, Data dictionary filter, search, choice and sort rules, Record viewer blocks, values and absent fields, FAQ markdown parsing, including that `FAQ.md` uses only the supported syntax, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison, Upload template, Data dictionary, Record viewer and the FAQ page into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
+## Licence
+
+REDCap Toolkit is released under the [MIT licence](LICENSE). The vendored Tabler CSS and the Tabler Icons are also MIT licensed, with their licences in `vendor/`. Report issues on [GitHub](https://github.com/kidsneuro-lab/redcap_toolkit/issues), linked by the GitHub icon beside the FAQ.
+
 ## Files
 
+- `LICENSE`: the MIT licence for this project.
 - `FAQ.md`: the FAQ page's content, fetched by the page at runtime. Only the markdown listed in its opening comment is supported.
 - `index.html` and `toolkit.css`: single-page interface. `toolkit.css` holds the few rules the vendored Tabler CSS lacks.
 - `vendor/`: Tabler CSS and the Tabler and Tabler Icons licences.

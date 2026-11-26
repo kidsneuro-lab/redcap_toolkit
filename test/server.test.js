@@ -49,6 +49,17 @@ test('server handler serves actual HTML and modules with a restrictive file allo
   });
 });
 
+// The header's GitHub link opens the issues page in a new tab, so tokens and any shown record stay in this one.
+test('the header links to GitHub issues in a new tab without a referrer', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const link = html.match(/<a [^>]*href="https:\/\/github\.com\/kidsneuro-lab\/redcap_toolkit\/issues"[^>]*>/)?.[0];
+  assert.ok(link, 'header must link to GitHub issues');
+  assert.match(link, /target="_blank"/);
+  assert.match(link, /rel="noopener noreferrer"/);
+  assert.match(link, /aria-label="Report an issue on GitHub"/);
+  assert.ok(html.indexOf('id="page-links"') < html.indexOf(link) && html.indexOf(link) < html.indexOf('id="theme-toggle"'), 'link sits between the FAQ link and the theme toggle');
+});
+
 test('with an allowlist, the served page and both of its policies permit connections only to the listed REDCap origins', async () => {
   const allowedUrls = ['https://redcap.example.org/api/', 'https://redcap.example.org/other/api/', 'https://second.example.org/api/'];
   await withServer({ allowedUrls }, async (base, send) => {
