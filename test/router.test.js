@@ -63,3 +63,19 @@ test('a Tool whose mount returns leave is told each time it is hidden, and not w
   router.show('#/compare');
   assert.deepEqual(left, ['record', 'record']);
 });
+
+test('pages such as the FAQ are linked from their own nav, shown like Tools and never the fallback', () => {
+  const document = installDocument();
+  const nav = document.createElement('ul'), pageNav = document.createElement('div'), outlet = document.createElement('div'), mounts = [];
+  const view = (id, title) => ({ id, title, mount: () => { mounts.push(id); } });
+  const router = mountRouter({ nav, pageNav, outlet, tools: [view('compare', 'Schema comparison')], pages: [view('faq', 'FAQ')], toolkit: {} });
+  const links = parent => [...parent.descendants()].filter(node => node.tagName === 'A');
+  assert.deepEqual(links(nav).map(link => link.href), ['#/compare']);
+  assert.deepEqual(links(pageNav).map(link => [link.href, link.textContent]), [['#/faq', 'FAQ']]);
+  router.show('#/faq');
+  assert.deepEqual(outlet.children.filter(panel => !panel.hidden).map(panel => panel.getAttribute('data-tool')), ['faq']);
+  assert.deepEqual([...links(nav), ...links(pageNav)].filter(link => link.getAttribute('aria-current') === 'page').map(link => link.href), ['#/faq']);
+  router.show('#/unknown');
+  assert.deepEqual(outlet.children.filter(panel => !panel.hidden).map(panel => panel.getAttribute('data-tool')), ['compare']);
+  assert.deepEqual(mounts, ['faq', 'compare']);
+});
