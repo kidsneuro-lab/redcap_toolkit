@@ -111,7 +111,7 @@ test('Explore demo needs no connection and its downloads are named as demo files
   await ui.$('download').click();
   const file = await ui.downloaded();
   assert.match(file.name, /^demo_enrolment_upload_template_\d{4}-\d{2}-\d{2}\.csv$/);
-  assert.equal(file.text, 'record_id,consent,enrolment_complete\r\n');
+  assert.equal(file.text, 'record_id,consent,initials,enrolment_complete\r\n');
 });
 
 test('entering the missing token in Projects loads the waiting project', async () => {

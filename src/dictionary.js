@@ -9,7 +9,8 @@ const parseChoices = text => text.split('|').map(item => item.trim()).filter(Boo
 });
 // REDCap exports no choices for these types, but their codes are fixed.
 const fixedChoices = { yesno: '1, Yes | 0, No', truefalse: '1, True | 0, False' };
-const choices = row => fixedChoices[row.field_type] ? parseChoices(fixedChoices[row.field_type]) : choiceTypes.has(row.field_type) ? parseChoices(row.select_choices_or_calculations || '') : [];
+// A field's coded choices. Record viewer uses them to label raw values.
+export const choices = row => fixedChoices[row.field_type] ? parseChoices(fixedChoices[row.field_type]) : choiceTypes.has(row.field_type) ? parseChoices(row.select_choices_or_calculations || '') : [];
 
 // Fields with no code or format to get right, or that take no entered value. Validated text keeps its format rule, so it stays.
 const freeText = row => ['notes', 'descriptive', 'file', 'calc'].includes(row.field_type) || (row.field_type === 'text' && !row.text_validation_type_or_show_slider_number);

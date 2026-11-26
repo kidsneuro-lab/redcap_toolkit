@@ -4,13 +4,14 @@ import { installDocument } from './dom.js';
 import compareView from '../src/compare-view.js';
 import templateView from '../src/template-view.js';
 import dictionaryView from '../src/dictionary-view.js';
+import recordView from '../src/record-view.js';
 
 // Every visited Tool stays mounted in one document, so each Tool is mounted into the same body with its demo loaded, which also renders data-driven ids.
 async function mountAllTools() {
   const document = installDocument();
   const toolkit = { projects: () => [], onProjectsChange: () => {}, proxy: () => false, apiUrls: null, notice: () => {}, showProjects: () => {}, setBusy: () => {} };
   const containers = {};
-  for (const tool of [compareView, templateView, dictionaryView]) {
+  for (const tool of [compareView, templateView, dictionaryView, recordView]) {
     const container = document.createElement('div');
     document.body.append(container);
     tool.mount(container, toolkit);
@@ -24,7 +25,7 @@ async function mountAllTools() {
   return { document, containers };
 }
 
-test('no element id appears twice across the three mounted Tools', async () => {
+test('no element id appears twice across the mounted Tools', async () => {
   const { document } = await mountAllTools();
   const ids = [...document.body.descendants()].map(node => node.id).filter(Boolean);
   assert.deepEqual(ids.filter((id, index) => ids.indexOf(id) !== index), []);

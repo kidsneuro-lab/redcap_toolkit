@@ -1,6 +1,6 @@
 # REDCap Toolkit
 
-A single-page app using HTML, CSS and plain JavaScript, with read-only tools for the schemas of classic REDCap projects. **Schema comparison** compares schemas from any two classic REDCap projects. **Upload template** produces a header-only CSV for importing data into one instrument of a project. **Data dictionary** shows the fields of one or more instruments so values can be entered correctly. No framework, build step or package installation is required.
+A single-page app using HTML, CSS and plain JavaScript, with read-only tools for classic REDCap projects. **Schema comparison** compares schemas from any two classic REDCap projects. **Upload template** produces a header-only CSV for importing data into one instrument of a project. **Data dictionary** shows the fields of one or more instruments so values can be entered correctly. **Record viewer** shows one record's values across all instruments so new data can follow existing conventions. No framework, build step or package installation is required.
 
 The interface uses [Tabler](https://tabler.io) 1.7.5 CSS, vendored in `vendor/tabler/1.7.5/` with its MIT licence (sha384 `BY4EnLpEeqBnDZno/u4SjmwHqbv1/U9as69Q0Jk/zeaDJ8iV10NK7FP+6fFEGW4i`). Tabler's JavaScript is not used. The few icons are inline outline SVGs from `@tabler/icons` 3.52.0, whose MIT licence is in `vendor/tabler-icons/3.52.0/`.
 
@@ -104,30 +104,45 @@ All instruments are ticked at first. Untick instruments, or use **Select all** a
 
 Select the Variable, Instrument, Field label or Type heading to sort by it. The first selection sorts ascending, the second descending and the third returns to Metadata order. Instrument sorts by label. The table cannot be downloaded; REDCap's own data dictionary download has the complete file.
 
+## Record viewer
+
+Open **Record viewer** in the navbar (`#/record`) and choose a project. Its Project Info must match the configured title exactly before Instruments, Metadata and Export Field Names are requested; a project without a session token opens the Projects drawer instead. Type a record ID and select **View record** or press Enter. Only then is the record requested, and only that one record (see [Record data](#record-data)). There is no list of records to choose from. **Explore demo** shows a synthetic record without contacting REDCap.
+
+The record is shown as one block per instrument, in instrument order, with fields in Metadata order. Each instance of a repeating instrument has its own block. A block heading shows the instrument status with its code, for example "Complete (2)". A repeating instrument with no instances is shown as one block of empty fields, because the toolkit does not read the repeating setup for this Tool.
+
+- Values are shown as the API exports them: coded values as the raw code with its label, for example `2 Female`, and checkboxes as their ticked codes. Dates are always `YYYY-MM-DD` whatever the field's display format, which is the API's default import format. Validated text fields show their validation type.
+- **Hide empty fields** is ticked at first. The record ID is always shown.
+- Fields marked as identifiers in the data dictionary are masked until **Show identifiers** is ticked, which resets for each lookup. The masked value is not put in the page. This guards against a value being seen over a shoulder or a shared screen. It is not access control; the token's user rights decide what REDCap returns.
+- A field missing from the export, for example because the token's user rights remove identifiers, is shown as "Not exported with this token's rights", never as empty.
+- REDCap returns nothing both for a record that does not exist and for one outside the token's Data Access Group, so either shows "No record with this ID is available to this token".
+- The shown record and its ID are cleared on a new lookup, on choosing another project and on leaving the Tool. There is no download or copy button.
+
 ## Verification
 
 ```sh
 npm test
 ```
 
-The dependency-free tests cover comparison semantics, Upload template column rules, Data dictionary filter, search, choice and sort rules, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison, Upload template and Data dictionary into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
+The dependency-free tests cover comparison semantics, Upload template column rules, Data dictionary filter, search, choice and sort rules, Record viewer blocks, values and absent fields, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison, Upload template, Data dictionary and Record viewer into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
 ## Files
 
 - `index.html` and `toolkit.css`: single-page interface. `toolkit.css` holds the few rules the vendored Tabler CSS lacks.
 - `vendor/`: Tabler CSS and the Tabler and Tabler Icons licences.
 - `src/app.js`: startup only. Mounts the Projects drawer and the router and connects Tools through `toolkit`.
-- `src/router.js`: hash routes and navbar links. Each Tool is mounted on its first visit, then hidden and shown; unknown routes open Schema comparison.
+- `src/router.js`: hash routes and navbar links. Each Tool is mounted on its first visit, then hidden and shown, and a Tool that asks is told when it is hidden; unknown routes open Schema comparison.
 - `src/theme.js`: sets the light or dark theme before first paint. A classic script, because the CSP blocks inline scripts.
 - `src/projects-view.js`: the Projects button and drawer: saved project configuration, session tokens and the proxy switch.
 - `src/icons.js`: inline Tabler icons used by the views.
 - `src/compare-view.js`: the Schema comparison Tool: comparison orchestration, filters and report downloads.
 - `src/template-view.js`: the Upload template Tool: identity check, exports, field selection, preview and CSV download.
 - `src/dictionary-view.js`: the Data dictionary Tool: identity check, exports, instrument selection, filter, search and sorting.
+- `src/record-view.js`: the Record viewer Tool: identity check, exports, record lookup, empty field and identifier toggles, and clearing the record.
 - `src/dom.js`: small DOM helpers used by the views.
 - `src/compare.js`: pure comparison rules.
 - `src/template.js`: pure Upload template column rules and CSV serialisation.
 - `src/dictionary.js`: pure Data dictionary rules: which fields are shown, choice parsing, search and sort order.
+- `src/record.js`: pure Record viewer rules: blocks per instrument and instance, values with labels, and absent versus empty fields.
 - `src/identity.js`: pure project identity rules.
 - `src/projects.js`: reading and writing saved project configuration, with storage passed in.
 - `src/api.js`: API requests and response validation.

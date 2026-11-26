@@ -31,7 +31,7 @@ test('insertion does not produce false reorder differences', () => {
 test('field reorder is reported separately from a field moving instruments', () => {
   const { left } = demoSnapshots(), right = structuredClone(left);
   [right.metadata[0], right.metadata[1]] = [right.metadata[1], right.metadata[0]];
-  right.metadata[2].form_name = 'enrolment';
+  right.metadata.find(row => row.field_name === 'sample_id').form_name = 'enrolment';
   const result = compareSnapshots(left, right);
   assert.equal(result.sections.metadata.find(row => row.id === 'record_id').changes[0].property, 'relative_field_order');
   const moved = result.sections.metadata.find(row => row.id === 'sample_id');

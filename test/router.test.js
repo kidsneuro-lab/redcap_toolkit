@@ -47,3 +47,19 @@ test('unknown and empty routes fall back to Schema comparison', () => {
     assert.deepEqual(shell.current(), { shown: ['compare'], marked: ['#/compare'] }, hash);
   }
 });
+
+test('a Tool whose mount returns leave is told each time it is hidden, and not when shown again', () => {
+  const document = installDocument();
+  const nav = document.createElement('ul'), outlet = document.createElement('div'), left = [];
+  const tool = (id, leaves) => ({ id, title: id, mount: () => leaves ? { leave: () => left.push(id) } : undefined });
+  const router = mountRouter({ nav, outlet, tools: [tool('compare'), tool('record', true)], toolkit: {} });
+  router.show('#/record');
+  router.show('#/record');
+  assert.deepEqual(left, []);
+  router.show('#/compare');
+  router.show('#/compare');
+  assert.deepEqual(left, ['record']);
+  router.show('#/record');
+  router.show('#/compare');
+  assert.deepEqual(left, ['record', 'record']);
+});
