@@ -90,6 +90,25 @@ test('proxy forwards the exportFieldNames export used by Upload template', async
   });
 });
 
+test('proxy forwards a record export only for exactly one named record with fixed parameters', async () => {
+  const target = 'https://redcap.example.org/api/', bodies = [];
+  await withServer({ allowedUrls: [target], fetcher: async (url, options) => { bodies.push([...options.body.entries()].sort()); return Response.json([]); } }, async (base, send) => {
+    const post = (params, extra = []) => { const body = new URLSearchParams({ apiUrl: target, token: 'synthetic-test-token', content: 'record', format: 'json', returnFormat: 'json', type: 'flat', rawOrLabel: 'raw', ...params }); for (const [key, value] of extra) body.append(key, value); for (const [key, value] of Object.entries(params)) if (value === null) body.delete(key); return send(`${base}/api/export`, { method: 'POST', headers: { Origin: base }, body }); };
+    assert.equal((await post({ 'records[0]': 'SYN-001' })).status, 200);
+    assert.equal((await post({ 'records[0]': 'SYN-001', type: null, rawOrLabel: null, format: null, returnFormat: null })).status, 200);
+    for (const [params, extra, name] of [
+      [{}, [], 'no record'], [{ 'records[0]': ' ' }, [], 'blank record'], [{ 'records[0]': 'SYN-001' }, [['records[1]', 'SYN-002']], 'second record'],
+      [{ 'records[0]': 'SYN-001' }, [['records[0]', 'SYN-002']], 'repeated record'], [{ records: 'SYN-001' }, [], 'records without index'],
+      [{ 'records[0]': 'SYN-001', type: 'eav' }, [], 'other type'], [{ 'records[0]': 'SYN-001', rawOrLabel: 'label' }, [], 'labels'], [{ 'records[0]': 'SYN-001', format: 'csv' }, [], 'other format'],
+      [{ 'records[0]': 'SYN-001' }, [['fields[0]', 'record_id']], 'extra parameter'], [{ 'records[0]': 'SYN-001' }, [['filterLogic', '1']], 'filter logic']
+    ]) assert.equal((await post(params, extra)).status, 400, name);
+    const metadata = await send(`${base}/api/export`, { method: 'POST', headers: { Origin: base }, body: new URLSearchParams({ apiUrl: target, token: 'synthetic-test-token', content: 'metadata', 'records[0]': 'SYN-001' }) });
+    assert.equal(metadata.status, 400);
+    const expected = [['content', 'record'], ['format', 'json'], ['rawOrLabel', 'raw'], ['records[0]', 'SYN-001'], ['returnFormat', 'json'], ['token', 'synthetic-test-token'], ['type', 'flat']];
+    assert.deepEqual(bodies, [expected, expected]);
+  });
+});
+
 test('proxy strips remote error text rather than leaking credentials', async () => {
   const target = 'https://redcap.example.org/api/';
   await withServer({ allowedUrls: [target], fetcher: async () => Response.json({ error: 'synthetic-secret' }) }, async (base, send) => {

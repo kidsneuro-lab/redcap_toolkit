@@ -16,13 +16,14 @@ This app has three Tools for classic REDCap projects, without longitudinal event
 
 - Preserve the single-page HTML, CSS and plain JavaScript implementation. Keep it buildless, with the vendored Tabler CSS in `vendor/` as its only third-party file and no Tabler JavaScript, unless the user requests a change that warrants another approach.
 - Read [README.md](README.md) before changing setup, deployment, storage or report behaviour. Use `package.json` as the source of truth for runnable commands.
-- Keep version 1 focused on five exports: Project Info, Instruments, Repeating Instruments and Events, and Metadata for Schema comparison; Project Info, Metadata, Repeating Instruments and Events, and Export Field Names (`exportFieldNames`) for Upload template; and Project Info, Instruments and Metadata for Data dictionary. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
+- Keep version 1 focused on six exports: Project Info, Instruments, Repeating Instruments and Events, and Metadata for Schema comparison; Project Info, Metadata, Repeating Instruments and Events, and Export Field Names (`exportFieldNames`) for Upload template; Project Info, Instruments and Metadata for Data dictionary; and Project Info, Instruments, Metadata, Export Field Names and Records (`record`) for Record viewer. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
 - Describe agreement only within the exported settings. Current schema equality cannot establish change history, a prior baseline or compliance with a change specification. Specification review remains manual.
 
 ## Read-only REDCap access
 
 - Every REDCap operation must be a read-only export. Never call API methods that import, delete, rename, lock or otherwise change project data, settings, users or files, in application code, the proxy, tests or live checks.
 - Generated files such as upload templates are downloads for people to use elsewhere. The app must not submit them to REDCap.
+- A Records export names exactly one record, with `type=flat` and `rawOrLabel=raw`, and is refused in `src/api.js` and the proxy otherwise. Never add a whole-project, multi-record, filtered or record-listing export.
 
 ## Implementation boundaries
 
@@ -47,9 +48,10 @@ This app has three Tools for classic REDCap projects, without longitudinal event
 ## Storage and credentials
 
 - Store project configuration in browser local storage. Keep API tokens in session memory and exclude tokens from persisted configuration, report downloads, logs and URLs.
+- Record data may identify people. Keep record values and record IDs in page memory only while shown, and never write them to storage, URLs, logs, downloads, tests or fixtures other than synthetic ones.
 - Keep fixtures and demo data synthetic. Use authorised credentials only for a specifically authorised live integration check.
 - Preserve HTTPS API requests with form-encoded POST bodies and redirect refusal.
-- Keep the local proxy bound to loopback, restricted to explicitly allowed API URLs and the five read-only export operations. Preserve host and origin checks and generic upstream error messages.
+- Keep the local proxy bound to loopback, restricted to explicitly allowed API URLs, the six read-only export operations and their permitted parameters. Preserve host and origin checks and generic upstream error messages.
 - Treat CORS as a server permission requirement. Use the optional proxy when needed rather than weakening browser security.
 
 ## Verification and delivery

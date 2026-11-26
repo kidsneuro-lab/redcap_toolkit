@@ -34,9 +34,18 @@ REDCAP_API_URLS='https://redcap.example.org/api/' npm start
 
 Separate multiple API URLs with commas. Then enable **Use local proxy** in the Projects drawer.
 
-`REDCAP_API_URLS` is also the allowlist of URLs that may receive a token, whether or not the proxy is used. When it is set, the page's Content Security Policy permits connections only to those URLs' origins and a project cannot be saved with any other API URL. A saved project with another URL is shown as blocked and offers no token entry. No request containing a token is made to an unlisted URL. Without the variable, any HTTPS API URL is accepted, as before. The switch appears only when the page is served from `127.0.0.1` or `localhost`. The proxy forwards only the five read-only export operations (Project Info, Instruments, Repeating Instruments and Events, Metadata and Export Field Names), which the three Tools share, to the configured HTTPS URLs, refuses redirects, checks request origins and binds to loopback. Tokens pass through memory and are not logged or written to disk. Do not expose this development server to the network. Internal hosting should use a managed server with equivalent restrictions and HTTPS.
+`REDCAP_API_URLS` is also the allowlist of URLs that may receive a token, whether or not the proxy is used. When it is set, the page's Content Security Policy permits connections only to those URLs' origins and a project cannot be saved with any other API URL. A saved project with another URL is shown as blocked and offers no token entry. No request containing a token is made to an unlisted URL. Without the variable, any HTTPS API URL is accepted, as before. The switch appears only when the page is served from `127.0.0.1` or `localhost`. The proxy forwards only the six read-only export operations (Project Info, Instruments, Repeating Instruments and Events, Metadata, Export Field Names and Records), which the Tools share, to the configured HTTPS URLs. It refuses any parameter it does not expect, and a Records request unless it names exactly one record with `type=flat` and `rawOrLabel=raw`. It refuses redirects, checks request origins and binds to loopback. Tokens pass through memory and are not logged or written to disk. Do not expose this development server to the network. Internal hosting should use a managed server with equivalent restrictions and HTTPS.
 
 The static page and `src/` modules can also be hosted without Node. In that case direct browser access is required unless the host provides the optional `/api/export` contract. The **Use local proxy** option is intended for the supplied local server.
+
+## Record data
+
+The other exports return project schema and settings only. The Records export, used by the Record viewer, returns participant data, which may identify people.
+
+- Each request names exactly one record ID that the person typed. `src/api.js` and the proxy both refuse a Records request without exactly one record, so the toolkit cannot export a whole project, list record IDs or filter records.
+- Values are requested raw (`rawOrLabel=raw`) in the flat format. REDCap applies the token's user rights, including Data Access Groups and export restrictions.
+- REDCap writes each Records export to the project's Logging, so every lookup is visible to project users and auditors.
+- Record values and record IDs are held in page memory only while shown. They are never written to browser storage, URLs, logs or downloads.
 
 ## GitHub Pages
 

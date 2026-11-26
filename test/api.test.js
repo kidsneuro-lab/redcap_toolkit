@@ -62,3 +62,26 @@ test('exportFieldNames is requested as a read-only export and malformed or empty
   assert.throws(() => validateResponse('fieldNames', [{ original_field_name: 'record_id', choice_value: '' }]), /missing export_field_name/);
   assert.throws(() => validateResponse('fieldNames', [{ choice_value: '', export_field_name: 'record_id' }]), /missing original_field_name/);
 });
+test('a record export names exactly one record with fixed flat raw parameters', async () => {
+  let calls = 0;
+  const value = await fetchExport(config, 'record', { record: 'SYN-001', fetcher: async (url, options) => {
+    calls++;
+    assert.deepEqual([...options.body.entries()].sort(), [['content', 'record'], ['format', 'json'], ['rawOrLabel', 'raw'], ['records[0]', 'SYN-001'], ['returnFormat', 'json'], ['token', config.token], ['type', 'flat']]);
+    return Response.json([{ record_id: 'SYN-001' }]);
+  } });
+  assert.deepEqual(value, [{ record_id: 'SYN-001' }]);
+  await fetchExport(config, 'record', { record: 'SYN-001', proxy: true, fetcher: async (url, options) => { calls++; assert.equal(options.body.get('apiUrl'), config.apiUrl); assert.equal(options.body.getAll('records[0]').length, 1); return Response.json([]); } });
+  assert.equal(calls, 2);
+});
+test('a record export without a record ID, or a record ID on another export, is refused before any request', async () => {
+  let calls = 0;
+  const fetcher = async () => { calls++; return Response.json([]); };
+  for (const record of [undefined, '', '   ', ['SYN-001', 'SYN-002'], 1]) await assert.rejects(fetchExport(config, 'record', { record, fetcher }), /Enter a record ID/, String(record));
+  await assert.rejects(fetchExport(config, 'metadata', { record: 'SYN-001', fetcher }), /Only a record export/);
+  assert.equal(calls, 0);
+});
+test('an empty record export is valid, meaning no record is available to the token, and a malformed one is rejected', () => {
+  assert.deepEqual(validateResponse('record', []), []);
+  assert.throws(() => validateResponse('record', { record_id: 'SYN-001' }), /unexpected response/);
+  assert.throws(() => validateResponse('record', [null]), /unexpected response/);
+});
