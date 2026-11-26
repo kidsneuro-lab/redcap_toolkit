@@ -29,7 +29,7 @@ function mountTool(projects, { title, apiUrls = null } = {}) {
     setBusy: busy => calls.busy.push(busy)
   };
   templateView.mount(container, toolkit);
-  const $ = id => { const node = container.querySelector(`#${id}`); assert.ok(node, `Unknown element: ${id}`); return node; };
+  const $ = id => { const node = container.querySelector(`#template-${id}`); assert.ok(node, `Unknown element: ${id}`); return node; };
   const choose = (id, value) => { $(id).value = value; return $(id).dispatch('change'); };
   const check = (id, checked = true) => { $(id).checked = checked; return $(id).dispatch('change'); };
   // Stands in for the Projects drawer saving a change, such as an entered token.

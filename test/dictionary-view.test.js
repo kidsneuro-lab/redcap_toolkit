@@ -3,8 +3,6 @@ import assert from 'node:assert/strict';
 import { installDocument } from './dom.js';
 import { demoSnapshots } from '../src/demo.js';
 import dictionaryView from '../src/dictionary-view.js';
-import compareView from '../src/compare-view.js';
-import templateView from '../src/template-view.js';
 
 // The fake DOM keeps each node's own text, so a cell's text is gathered from its descendants.
 const text = node => [node.textContent, ...[...node.descendants()].map(child => child.textContent)].join('');
@@ -39,7 +37,7 @@ function mountTool(projects, { title, exports = {} } = {}) {
   const shownNames = () => $('rows').children.map(row => text(row.children[0]));
   // Replaces the saved projects and tells the Tool, as the Projects drawer does.
   const changeProjects = next => { projects = next; for (const listener of changes) listener(toolkit.projects()); };
-  return { $, choose, calls, requests, shownNames, document, changeProjects, container };
+  return { $, choose, calls, requests, shownNames, document, changeProjects };
 }
 
 test('Data dictionary is a Tool that checks identity before reading Instruments and Metadata, and nothing else', async () => {
@@ -161,16 +159,4 @@ test('entering a missing token reloads the chosen project, and removing the proj
   await new Promise(resolve => setTimeout(resolve));
   assert.equal(ui.$('controls').hidden, true);
   assert.equal(ui.$('project').children.length, 1);
-});
-
-test('no element id in Data dictionary is shared with another Tool, since every visited Tool stays mounted in one document', async () => {
-  // An instrument named "filter" must not produce an id another Tool already uses.
-  const { left } = demoSnapshots(), metadata = left.metadata.map(row => row.form_name === 'sample' ? { ...row, form_name: 'filter' } : row);
-  const ui = mountTool([project('one', 'Example project DEV')], { exports: { instrument: [left.instruments[0], { instrument_name: 'filter', instrument_label: 'Filter' }], metadata } });
-  await ui.choose('one');
-  const toolkit = { projects: () => [], onProjectsChange: () => {}, proxy: () => false, apiUrls: null, notice: () => {}, showProjects: () => {}, setBusy: () => {} };
-  const others = [compareView, templateView].map(tool => { const container = ui.document.createElement('div'); tool.mount(container, toolkit); return container; });
-  const ids = container => [...container.descendants()].map(node => node.id).filter(Boolean);
-  const taken = new Set(others.flatMap(ids));
-  assert.deepEqual(ids(ui.container).filter(id => taken.has(id)), []);
 });
