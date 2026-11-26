@@ -12,11 +12,11 @@
 
 ## Scope and sources
 
-This app has two Tools for classic REDCap projects, without longitudinal events or arms: Schema comparison compares the schemas of any two projects, and Upload template produces a header-only CSV for importing data into one instrument.
+This app has three Tools for classic REDCap projects, without longitudinal events or arms: Schema comparison compares the schemas of any two projects, Upload template produces a header-only CSV for importing data into one instrument, and Data dictionary shows the fields of selected instruments for correct data entry.
 
 - Preserve the single-page HTML, CSS and plain JavaScript implementation. Keep it buildless, with the vendored Tabler CSS in `vendor/` as its only third-party file and no Tabler JavaScript, unless the user requests a change that warrants another approach.
 - Read [README.md](README.md) before changing setup, deployment, storage or report behaviour. Use `package.json` as the source of truth for runnable commands.
-- Keep version 1 focused on five exports: Project Info, Instruments, Repeating Instruments and Events, and Metadata for Schema comparison, and Project Info, Metadata, Repeating Instruments and Events, and Export Field Names (`exportFieldNames`) for Upload template. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
+- Keep version 1 focused on five exports: Project Info, Instruments, Repeating Instruments and Events, and Metadata for Schema comparison; Project Info, Metadata, Repeating Instruments and Events, and Export Field Names (`exportFieldNames`) for Upload template; and Project Info, Instruments and Metadata for Data dictionary. Survey setup, XML comparison, events, arms and saved baseline comparison require an explicit scope change.
 - Describe agreement only within the exported settings. Current schema equality cannot establish change history, a prior baseline or compliance with a change specification. Specification review remains manual.
 
 ## Read-only REDCap access
@@ -26,8 +26,8 @@ This app has two Tools for classic REDCap projects, without longitudinal events 
 
 ## Implementation boundaries
 
-- Keep comparison rules in `src/compare.js`, Upload template column rules in `src/template.js` and identity rules in `src/identity.js`, all independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
-- Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, comparison orchestration, filters and report downloads in `src/compare-view.js`, and Upload template orchestration, field selection and CSV downloads in `src/template-view.js`.
+- Keep comparison rules in `src/compare.js`, Upload template column rules in `src/template.js`, Data dictionary rules in `src/dictionary.js` and identity rules in `src/identity.js`, all independent of the DOM, storage and network. Keep saved project configuration in `src/projects.js`, with storage passed in.
+- Keep API requests and response validation in `src/api.js`. Keep the Projects drawer, session tokens and the proxy switch in `src/projects-view.js`, hash routing in `src/router.js`, comparison orchestration, filters and report downloads in `src/compare-view.js`, Upload template orchestration, field selection and CSV downloads in `src/template-view.js`, and Data dictionary orchestration, instrument selection, filter, search and sorting in `src/dictionary-view.js`.
 - Each Tool view exports `{ id, title, mount(container, toolkit) }` and reaches projects, tokens, notices and the Projects area only through `toolkit`. Views touch the DOM only inside `mount`. `src/app.js` is startup only and the one module that looks up elements from the page.
 - Keep `server.js` optional for static hosting. When adding a browser module or asset, update its explicit static-file allowlist so the local server can serve it.
 - Render exported labels, logic, annotations and HTML as text. Preserve keyboard access and explicit reference and comparison labels.
