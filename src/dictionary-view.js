@@ -6,15 +6,15 @@ import { element, option } from './dom.js';
 
 // The demo project is offered in the Project select only while it is loaded. It is never added to the project list.
 const demoId = 'demo', demoLabel = 'Example project DEV (demo, synthetic)';
-const template = `<div class="page-header mt-0 mb-4"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap data dictionary</div><h1 class="page-title">Data dictionary</h1><p class="text-secondary mb-0 mt-1">Look up field names, types and coded values before entering data. Nothing is sent to REDCap.</p></div><div class="col-auto"><button id="demo" class="btn" type="button">Explore demo</button></div></div></div>
+const template = `<div class="page-header mt-0 mb-4"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap data dictionary</div><h1 class="page-title">Data dictionary</h1><p class="text-secondary mb-0 mt-1">Look up field names, types and coded values before entering data. Nothing is sent to REDCap.</p></div><div class="col-auto"><button id="dictionary-demo" class="btn" type="button">Explore demo</button></div></div></div>
 <section class="card" aria-label="Project and instruments"><div class="card-body">
-  <div class="row g-3"><div class="col-md-6"><label class="form-label" for="project">Project</label><select id="project" class="form-select"><option value="">Select a project</option></select></div></div>
-  <div id="project-status" class="mt-3" role="status"></div>
-  <div id="controls" class="mt-3" hidden>
-    <fieldset class="mb-3"><legend class="form-label">Instruments</legend><div id="instrument-list"></div><div class="btn-list mt-2"><button id="select-instruments" class="btn btn-sm" type="button">Select all</button><button id="clear-instruments" class="btn btn-sm" type="button">Clear</button></div></fieldset>
-    <div class="row g-3 align-items-end mb-3"><div class="col-md-6"><label class="form-label" for="search">Search</label><input id="search" class="form-control" type="search" placeholder="Field name, label or choice" autocomplete="off"></div><div class="col-md-6"><label class="form-check mb-2"><input id="hide-free-text" class="form-check-input" type="checkbox" checked><span class="form-check-label">Hide free-text and non-entry fields</span></label></div></div>
-    <p id="empty" class="text-secondary mb-0" hidden></p>
-    <div class="table-responsive"><table class="table table-sm table-vcenter mb-0"><thead><tr><th><button id="sort-name" class="table-sort" type="button">Variable</button></th><th><button id="sort-instrument" class="table-sort" type="button">Instrument</button></th><th><button id="sort-label" class="table-sort" type="button">Field label</button></th><th><button id="sort-type" class="table-sort" type="button">Type</button></th><th>Choices</th><th>Required</th><th>Min/Max</th></tr></thead><tbody id="dictionary-rows"></tbody></table></div>
+  <div class="row g-3"><div class="col-md-6"><label class="form-label" for="dictionary-project">Project</label><select id="dictionary-project" class="form-select"><option value="">Select a project</option></select></div></div>
+  <div id="dictionary-project-status" class="mt-3" role="status"></div>
+  <div id="dictionary-controls" class="mt-3" hidden>
+    <fieldset class="mb-3"><legend class="form-label">Instruments</legend><div id="dictionary-instrument-list"></div><div class="btn-list mt-2"><button id="dictionary-select-instruments" class="btn btn-sm" type="button">Select all</button><button id="dictionary-clear-instruments" class="btn btn-sm" type="button">Clear</button></div></fieldset>
+    <div class="row g-3 align-items-end mb-3"><div class="col-md-6"><label class="form-label" for="dictionary-search">Search</label><input id="dictionary-search" class="form-control" type="search" placeholder="Field name, label or choice" autocomplete="off"></div><div class="col-md-6"><label class="form-check mb-2"><input id="dictionary-hide-free-text" class="form-check-input" type="checkbox" checked><span class="form-check-label">Hide free-text and non-entry fields</span></label></div></div>
+    <p id="dictionary-empty" class="text-secondary mb-0" hidden></p>
+    <div class="table-responsive"><table class="table table-sm table-vcenter mb-0"><thead><tr><th><button id="dictionary-sort-name" class="table-sort" type="button">Variable</button></th><th><button id="dictionary-sort-instrument" class="table-sort" type="button">Instrument</button></th><th><button id="dictionary-sort-label" class="table-sort" type="button">Field label</button></th><th><button id="dictionary-sort-type" class="table-sort" type="button">Type</button></th><th>Choices</th><th>Required</th><th>Min/Max</th></tr></thead><tbody id="dictionary-rows"></tbody></table></div>
   </div>
 </div></section>`;
 
@@ -22,7 +22,8 @@ const sortColumns = ['name', 'instrument', 'label', 'type'];
 
 function mount(container, toolkit) {
   container.innerHTML = template;
-  const $ = id => container.querySelector(`#${id}`);
+  // Every visited Tool stays mounted in one document, so this Tool's element ids carry a prefix that keeps them, and label targets, unique.
+  const $ = id => container.querySelector(`#dictionary-${id}`);
   let snapshot = null, demo = false, loads = 0, loaded = '', sort = null;
 
   function renderProjects() {
@@ -36,7 +37,7 @@ function mount(container, toolkit) {
   function renderInstruments() {
     $('instrument-list').replaceChildren(...snapshot.instruments.map(row => {
       const wrapper = element('label', undefined, 'form-check form-check-inline'), box = element('input', undefined, 'form-check-input');
-      box.type = 'checkbox'; box.id = `instrument-${row.instrument_name}`; box.checked = true;
+      box.type = 'checkbox'; box.id = `dictionary-instrument-${row.instrument_name}`; box.checked = true;
       box.addEventListener('change', renderRows);
       wrapper.append(box, element('span', row.instrument_label, 'form-check-label'));
       return wrapper;
@@ -51,7 +52,7 @@ function mount(container, toolkit) {
     const rows = dictionaryRows(snapshot, { instruments, hideFreeText: $('hide-free-text').checked, search: $('search').value, sort });
     $('empty').hidden = rows.length > 0;
     $('empty').textContent = instruments.length ? 'No fields match the search or filter.' : 'Select at least one instrument.';
-    $('dictionary-rows').replaceChildren(...rows.map(row => {
+    $('rows').replaceChildren(...rows.map(row => {
       const tr = element('tr'), name = element('td'), instrument = element('td'), choices = element('td');
       name.append(element('code', row.name));
       instrument.append(element('div', row.instrumentLabel), element('div', row.instrument, 'text-secondary small'));
@@ -73,7 +74,7 @@ function mount(container, toolkit) {
     loaded = JSON.stringify(config ?? null);
     snapshot = null; demo = false; toolkit.notice('');
     renderProjects();
-    $('controls').hidden = true; $('dictionary-rows').replaceChildren(); status('');
+    $('controls').hidden = true; $('rows').replaceChildren(); status('');
     if (!config) return;
     if (!config.token) { toolkit.showProjects(); return status('Enter an API token for this project with Enter token in Projects. Tokens are required again after a page reload.', 'alert alert-warning mb-0'); }
     status('Checking project identity, then reading metadata…');
