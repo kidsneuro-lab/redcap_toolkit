@@ -2,8 +2,15 @@
 
 // Inline code, bold and links, in that order of precedence, so markup inside code stays literal.
 const inlinePattern = /`([^`]+)`|\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)/g;
-// A link may only lead to an HTTPS page, a path relative to the page or a route in this app.
-const allowedHref = href => /^https:\/\//i.test(href) || href.startsWith('#/') || !/^([a-z][a-z\d+.-]*:|\/\/|#)/i.test(href);
+// A link may only lead to an HTTPS page, a path relative to the page or a route in this app. Browsers rewrite or drop backslashes and
+// control characters while parsing a URL, which could turn an apparently relative link into another host or scheme, so those are refused,
+// and a relative link must still resolve to the page's own site under the same parser.
+const base = new URL('https://faq.invalid/page/');
+function allowedHref(href) {
+  if (/[\x00-\x20\x7f\\]/.test(href)) return false;
+  if (/^https:\/\//i.test(href) || href.startsWith('#/')) return true;
+  return !/^([a-z][a-z\d+.-]*:|#)/i.test(href) && new URL(href, base).origin === base.origin;
+}
 // Block syntax outside the subset: indented lines, numbered and other lists, quotes, code fences, deeper headings, tables, raw HTML and rules.
 const unsupportedBlock = /^(\s+\S|\d+[.)]\s|[*+]\s|>|```|~~~|#{4,}|\||<(?!!--)|[-*_=]{3,}\s*$)/;
 // Inline syntax outside the subset, in text that is not code: raw HTML tags and italics.

@@ -45,6 +45,13 @@ test('only https, relative and route links are links, others stay as their markd
   }
 });
 
+test('links the browser would rewrite into another host or scheme are not links', () => {
+  // URL parsing treats a backslash as a slash and strips leading control characters, so these would leave the page or run script.
+  for (const href of ['\\\\example.org', '/\\example.org', '\\/example.org', 'docs\\..\\\\example.org', '\x01javascript:alert(1)', '\x1fhttp://example.org', '\x00//example.org', 'faq\x7f.md']) {
+    assert.deepEqual(parseFaq(`[x](${href})`), { blocks: [{ type: 'paragraph', content: [text(`[x](${href})`)] }], unsupported: [1] }, JSON.stringify(href));
+  }
+});
+
 test('syntax outside the subset stays as its markdown text and is reported by line', () => {
   for (const source of ['1. First', '* Item', '+ Item', '  - Nested', '    indented code', '> Quote', '```', '#### Deep', '| a | b |', '<b>Bold</b>', '---', 'Some *italic* text', 'Some _italic_ text', 'Line with <script>x</script>']) {
     assert.deepEqual(parseFaq(`Intro\n\n${source}`), { blocks: [{ type: 'paragraph', content: [text('Intro')] }, { type: 'paragraph', content: [text(source.trim())] }], unsupported: [3] }, source);
