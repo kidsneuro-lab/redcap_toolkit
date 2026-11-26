@@ -56,5 +56,5 @@ test('the CSV is one comma-separated header row ending in CRLF, encoded as UTF-8
 test('the demo DEV project exercises every column rule', () => {
   const { left } = demoSnapshots();
   assert.deepEqual(templateColumns(left, 'sample'), ['record_id', 'redcap_repeat_instrument', 'redcap_repeat_instance', 'sample_id', 'collected', 'freezer_events___1', 'freezer_events___2', 'freezer_events____9', 'lab_code', 'rna_quality', 'sample_complete']);
-  assert.deepEqual(templateColumns(left, 'enrolment'), ['record_id', 'consent', 'enrolment_complete']);
+  assert.deepEqual(templateColumns(left, 'enrolment'), ['record_id', 'consent', 'initials', 'enrolment_complete']);
 });

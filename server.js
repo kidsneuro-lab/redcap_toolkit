@@ -5,7 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { recordParameters, validateApiUrl } from './src/api.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/toolkit.css', ['toolkit.css', 'text/css']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dictionary', 'dictionary-view', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'template', 'template-view', 'theme'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
+const staticFiles = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/toolkit.css', ['toolkit.css', 'text/css']], ['/vendor/tabler/1.7.5/tabler.min.css', ['vendor/tabler/1.7.5/tabler.min.css', 'text/css']], ...['app', 'api', 'compare', 'compare-view', 'demo', 'dictionary', 'dictionary-view', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'record', 'record-view', 'router', 'template', 'template-view', 'theme'].map(name => [`/src/${name}.js`, [`src/${name}.js`, 'text/javascript']])]);
 // The Release workflow publishes exactly these files to GitHub Pages.
 export async function publishSite(dir) {
   for (const file of new Set([...staticFiles.values()].map(([file]) => file))) {
