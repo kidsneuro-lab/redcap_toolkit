@@ -6,25 +6,26 @@ import { download, element, option } from './dom.js';
 
 // The demo project is offered in the Project select only while it is loaded. It is never added to the project list.
 const demoId = 'demo', demoLabel = 'Example project DEV (demo, synthetic)';
-const template = `<div class="page-header mt-0 mb-4"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap upload template</div><h1 class="page-title">Upload template</h1><p class="text-secondary mb-0 mt-1">Download a CSV header for importing data into one instrument. Nothing is sent to REDCap.</p></div><div class="col-auto"><button id="demo" class="btn" type="button">Explore demo</button></div></div></div>
+const template = `<div class="page-header mt-0 mb-4"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap upload template</div><h1 class="page-title">Upload template</h1><p class="text-secondary mb-0 mt-1">Download a CSV header for importing data into one instrument. Nothing is sent to REDCap.</p></div><div class="col-auto"><button id="template-demo" class="btn" type="button">Explore demo</button></div></div></div>
 <div class="row g-3">
   <div class="col-lg-8"><section class="card" aria-label="Project, instrument and fields"><div class="card-body">
-    <div class="row g-3"><div class="col-md-6"><label class="form-label" for="project">Project</label><select id="project" class="form-select"><option value="">Select a project</option></select></div><div class="col-md-6"><label class="form-label" for="instrument">Instrument</label><select id="instrument" class="form-select" disabled><option value="">Select a project first</option></select></div></div>
-    <div id="project-status" class="mt-3" role="status"></div>
-    <div id="fields" class="mt-3" hidden>
-      <div class="form-selectgroup mb-3" role="radiogroup" aria-label="Fields to include"><label class="form-selectgroup-item"><input id="mode-all" class="form-selectgroup-input" type="radio" name="template-mode" value="all" checked><span class="form-selectgroup-label">All importable fields</span></label><label class="form-selectgroup-item"><input id="mode-selected" class="form-selectgroup-input" type="radio" name="template-mode" value="selected"><span class="form-selectgroup-label">Selected fields</span></label></div>
-      <div class="table-responsive"><table class="table table-sm table-vcenter mb-0"><thead><tr><th class="w-1"><span class="visually-hidden">Include</span></th><th>Field</th><th>Label</th><th>Type</th><th>Notes</th></tr></thead><tbody id="field-rows"></tbody></table></div>
+    <div class="row g-3"><div class="col-md-6"><label class="form-label" for="template-project">Project</label><select id="template-project" class="form-select"><option value="">Select a project</option></select></div><div class="col-md-6"><label class="form-label" for="template-instrument">Instrument</label><select id="template-instrument" class="form-select" disabled><option value="">Select a project first</option></select></div></div>
+    <div id="template-project-status" class="mt-3" role="status"></div>
+    <div id="template-fields" class="mt-3" hidden>
+      <div class="form-selectgroup mb-3" role="radiogroup" aria-label="Fields to include"><label class="form-selectgroup-item"><input id="template-mode-all" class="form-selectgroup-input" type="radio" name="template-mode" value="all" checked><span class="form-selectgroup-label">All importable fields</span></label><label class="form-selectgroup-item"><input id="template-mode-selected" class="form-selectgroup-input" type="radio" name="template-mode" value="selected"><span class="form-selectgroup-label">Selected fields</span></label></div>
+      <div class="table-responsive"><table class="table table-sm table-vcenter mb-0"><thead><tr><th class="w-1"><span class="visually-hidden">Include</span></th><th>Field</th><th>Label</th><th>Type</th><th>Notes</th></tr></thead><tbody id="template-field-rows"></tbody></table></div>
     </div>
   </div></section></div>
-  <div class="col-lg-4"><section class="card" aria-labelledby="preview-heading">
-    <div class="card-header"><h2 id="preview-heading" class="card-title">CSV header preview</h2><div class="card-actions"><span id="column-count" class="badge bg-blue-lt"></span></div></div>
-    <div class="card-body"><div id="preview" class="font-monospace text-break small mb-3"></div><div id="filename" class="text-secondary small mb-3 text-break"></div><button id="download" class="btn btn-primary w-100" type="button" disabled aria-describedby="download-hint">Download CSV</button><div id="download-hint" class="form-hint mt-2"></div></div>
+  <div class="col-lg-4"><section class="card" aria-labelledby="template-preview-heading">
+    <div class="card-header"><h2 id="template-preview-heading" class="card-title">CSV header preview</h2><div class="card-actions"><span id="template-column-count" class="badge bg-blue-lt"></span></div></div>
+    <div class="card-body"><div id="template-preview" class="font-monospace text-break small mb-3"></div><div id="template-filename" class="text-secondary small mb-3 text-break"></div><button id="template-download" class="btn btn-primary w-100" type="button" disabled aria-describedby="template-download-hint">Download CSV</button><div id="template-download-hint" class="form-hint mt-2"></div></div>
   </section></div>
 </div>`;
 
 function mount(container, toolkit) {
   container.innerHTML = template;
-  const $ = id => container.querySelector(`#${id}`);
+  // Every visited Tool stays mounted in one document, so this Tool's element ids carry a prefix that keeps them, and label targets, unique.
+  const $ = id => container.querySelector(`#template-${id}`);
   let snapshot = null, demo = false, instrument = '', mode = 'all', selected = new Set(), loads = 0, loaded = '';
 
   function renderProjects() {
@@ -49,7 +50,7 @@ function mount(container, toolkit) {
   // A checkbox row. Fixed and excluded rows cannot be changed; in All mode every importable row is shown ticked.
   function fieldRow(name, label, type, notes, { fixed = false, reason = '', readonly = false } = {}) {
     const row = element('tr', undefined, fixed || reason ? 'text-secondary' : undefined), box = element('input', undefined, 'form-check-input');
-    box.type = 'checkbox'; box.id = `pick-${name}`;
+    box.type = 'checkbox'; box.id = `template-pick-${name}`;
     box.checked = fixed || (!reason && (mode === 'all' || selected.has(name)));
     box.disabled = fixed || !!reason || mode === 'all';
     box.setAttribute('aria-label', fixed ? `${name} is always included` : reason ? `${name} is excluded` : `Include ${name}`);

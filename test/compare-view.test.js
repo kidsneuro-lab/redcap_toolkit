@@ -29,7 +29,7 @@ function mountTool(projects, { proxy = false, apiUrls = null, projectInfo = {} }
     setBusy: busy => calls.busy.push(busy)
   };
   compareView.mount(container, toolkit);
-  const $ = id => { const node = container.querySelector(`#${id}`); assert.ok(node, `Unknown element: ${id}`); return node; };
+  const $ = id => { const node = container.querySelector(`#compare-${id}`); assert.ok(node, `Unknown element: ${id}`); return node; };
   const select = (reference, comparison) => { $('reference').value = reference; $('comparison').value = comparison; };
   const downloadText = () => resolveObjectURL(document.downloads.at(-1).href).text();
   const downloaded = async () => JSON.parse(await downloadText());

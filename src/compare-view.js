@@ -27,32 +27,33 @@ function omitProjectInfo(report) {
   return { ...report, coverage: { ...report.coverage, omittedProjectInfoProperties }, snapshots, sections: { ...report.sections, project } };
 }
 
-const template = `<div class="page-header mt-0 mb-4 d-print-none"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap schema comparison</div><h1 class="page-title">Compare with confidence.</h1><p class="text-secondary mb-0 mt-1">Review project settings, instruments and field definitions side by side.</p></div><div class="col-auto"><button id="demo" class="btn" type="button">Explore demo</button></div></div></div>
-<section class="card mb-4 d-print-none" aria-labelledby="comparison-heading">
-  <div class="card-header"><h2 id="comparison-heading" class="card-title">Choose your projects</h2><div class="card-actions"><button id="manage" class="btn btn-link" type="button" aria-haspopup="dialog">Manage projects <span id="project-count" class="ms-1"></span></button></div></div>
-  <div class="card-body"><div class="row g-3 align-items-center"><div class="col-md"><label class="form-label" for="reference">Reference project</label><select id="reference" class="form-select"><option value="">Select a project</option></select><div class="form-hint">Values appear on the left.</div></div><div class="col-md-auto d-none d-md-block text-secondary" aria-hidden="true">vs</div><div class="col-md"><label class="form-label" for="comparison">Comparison project</label><select id="comparison" class="form-select"><option value="">Select a project</option></select><div class="form-hint">Values appear on the right.</div></div></div></div>
-  <div class="card-footer text-end"><button id="compare" class="btn btn-primary" type="button">Compare projects</button></div>
+const template = `<div class="page-header mt-0 mb-4 d-print-none"><div class="row g-3 align-items-center"><div class="col"><div class="page-pretitle">REDCap schema comparison</div><h1 class="page-title">Compare with confidence.</h1><p class="text-secondary mb-0 mt-1">Review project settings, instruments and field definitions side by side.</p></div><div class="col-auto"><button id="compare-demo" class="btn" type="button">Explore demo</button></div></div></div>
+<section class="card mb-4 d-print-none" aria-labelledby="compare-comparison-heading">
+  <div class="card-header"><h2 id="compare-comparison-heading" class="card-title">Choose your projects</h2><div class="card-actions"><button id="compare-manage" class="btn btn-link" type="button" aria-haspopup="dialog">Manage projects <span id="compare-project-count" class="ms-1"></span></button></div></div>
+  <div class="card-body"><div class="row g-3 align-items-center"><div class="col-md"><label class="form-label" for="compare-reference">Reference project</label><select id="compare-reference" class="form-select"><option value="">Select a project</option></select><div class="form-hint">Values appear on the left.</div></div><div class="col-md-auto d-none d-md-block text-secondary" aria-hidden="true">vs</div><div class="col-md"><label class="form-label" for="compare-comparison">Comparison project</label><select id="compare-comparison" class="form-select"><option value="">Select a project</option></select><div class="form-hint">Values appear on the right.</div></div></div></div>
+  <div class="card-footer text-end"><button id="compare-compare" class="btn btn-primary" type="button">Compare projects</button></div>
 </section>
-<section id="status-panel" class="card mb-4 d-print-none" aria-label="Comparison progress" hidden><div class="card-header"><h2 id="status-title" class="card-title">Fetching schema</h2><div class="card-actions"><button id="cancel-compare" class="btn" type="button">Cancel comparison</button></div></div><div id="progress" class="card-body row g-3"></div></section>
-<section id="empty-state" class="empty"><div class="empty-icon">${icon('arrows-diff')}</div><h2 class="empty-title">Your schema review starts here</h2><p class="empty-subtitle text-secondary">Add your projects, then run a comparison.<br>Or explore the demo to see how differences are reported.</p><div class="empty-action"><button id="empty-add" class="btn btn-primary" type="button">Set up projects</button></div></section>
-<section id="report" aria-labelledby="report-heading" hidden>
-  <div class="row g-3 align-items-center mb-3"><div class="col"><div id="report-kind" class="page-pretitle">Comparison report</div><h2 id="report-heading" class="h1 mb-1">Schema comparison</h2><div id="report-context" class="text-secondary"></div></div><div class="col-auto d-print-none">
-    <label class="form-check"><input id="include-sensitive-project-info" class="form-check-input" type="checkbox"><span class="form-check-label">Include sensitive Project Info values in download</span></label>
-    <button id="download" class="btn" type="button">${icon('download', 'me-1')}Download report</button>
+<section id="compare-status-panel" class="card mb-4 d-print-none" aria-label="Comparison progress" hidden><div class="card-header"><h2 id="compare-status-title" class="card-title">Fetching schema</h2><div class="card-actions"><button id="compare-cancel-compare" class="btn" type="button">Cancel comparison</button></div></div><div id="compare-progress" class="card-body row g-3"></div></section>
+<section id="compare-empty-state" class="empty"><div class="empty-icon">${icon('arrows-diff')}</div><h2 class="empty-title">Your schema review starts here</h2><p class="empty-subtitle text-secondary">Add your projects, then run a comparison.<br>Or explore the demo to see how differences are reported.</p><div class="empty-action"><button id="compare-empty-add" class="btn btn-primary" type="button">Set up projects</button></div></section>
+<section id="compare-report" aria-labelledby="compare-report-heading" hidden>
+  <div class="row g-3 align-items-center mb-3"><div class="col"><div id="compare-report-kind" class="page-pretitle">Comparison report</div><h2 id="compare-report-heading" class="h1 mb-1">Schema comparison</h2><div id="compare-report-context" class="text-secondary"></div></div><div class="col-auto d-print-none">
+    <label class="form-check"><input id="compare-include-sensitive-project-info" class="form-check-input" type="checkbox"><span class="form-check-label">Include sensitive Project Info values in download</span></label>
+    <button id="compare-download" class="btn" type="button">${icon('download', 'me-1')}Download report</button>
   </div></div>
-  <div id="identities" class="row g-3"></div>
+  <div id="compare-identities" class="row g-3"></div>
   <p class="text-secondary small my-3">Coverage: project information, instrument definitions, repeating configuration and field metadata. Survey setup is not checked. Review against your change specification is manual. Exports are retrieved separately and are not an atomic snapshot.</p>
-  <div id="summary" class="row g-3"></div>
-  <div class="row g-3 align-items-end my-3 d-print-none"><div class="col-md"><label class="form-label" for="search">Search report</label><input id="search" class="form-control" type="search" placeholder="Field, property or value"></div><div class="col-md-4 col-lg-3"><label class="form-label" for="instrument-filter">Instrument</label><select id="instrument-filter" class="form-select"><option value="">All instruments</option></select></div><div class="col-md-auto"><label class="form-check mb-2"><input id="differences-only" class="form-check-input" type="checkbox" checked><span class="form-check-label">Differences only</span></label></div></div>
+  <div id="compare-summary" class="row g-3"></div>
+  <div class="row g-3 align-items-end my-3 d-print-none"><div class="col-md"><label class="form-label" for="compare-search">Search report</label><input id="compare-search" class="form-control" type="search" placeholder="Field, property or value"></div><div class="col-md-4 col-lg-3"><label class="form-label" for="compare-instrument-filter">Instrument</label><select id="compare-instrument-filter" class="form-select"><option value="">All instruments</option></select></div><div class="col-md-auto"><label class="form-check mb-2"><input id="compare-differences-only" class="form-check-input" type="checkbox" checked><span class="form-check-label">Differences only</span></label></div></div>
   <div class="card">
-    <div class="card-header d-print-none"><div id="tabs" class="nav nav-tabs card-header-tabs" role="tablist" aria-label="Report sections"></div></div>
-    <div id="results" class="card-body" role="tabpanel" tabindex="0"></div>
+    <div class="card-header d-print-none"><div id="compare-tabs" class="nav nav-tabs card-header-tabs" role="tablist" aria-label="Report sections"></div></div>
+    <div id="compare-results" class="card-body" role="tabpanel" tabindex="0"></div>
   </div>
 </section>`;
 
 function mount(container, toolkit) {
   container.innerHTML = template;
-  const $ = id => container.querySelector(`#${id}`);
+  // Every visited Tool stays mounted in one document, so this Tool's element ids carry a prefix that keeps them, and label targets, unique.
+  const $ = id => container.querySelector(`#compare-${id}`);
   const notice = toolkit.notice;
   let report = null, activeSection = 'project', controller = null;
 
@@ -175,14 +176,14 @@ function mount(container, toolkit) {
     }));
     $('tabs').replaceChildren(...sections.map((section, index) => {
       const tab = button(titles[section], () => setSection(section), `nav-link${activeSection === section ? ' active' : ''}`);
-      tab.id = `tab-${section}`; tab.setAttribute('role', 'tab'); tab.setAttribute('aria-selected', String(activeSection === section)); tab.setAttribute('aria-controls', 'results'); tab.tabIndex = activeSection === section ? 0 : -1;
+      tab.id = `compare-tab-${section}`; tab.setAttribute('role', 'tab'); tab.setAttribute('aria-selected', String(activeSection === section)); tab.setAttribute('aria-controls', 'compare-results'); tab.tabIndex = activeSection === section ? 0 : -1;
       tab.addEventListener('keydown', event => {
         const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
         if (direction || ['Home', 'End'].includes(event.key)) { event.preventDefault(); setSection(sections[event.key === 'Home' ? 0 : event.key === 'End' ? sections.length - 1 : (index + direction + sections.length) % sections.length], true); }
       });
       return tab;
     }));
-    $('results').setAttribute('aria-labelledby', `tab-${activeSection}`);
+    $('results').setAttribute('aria-labelledby', `compare-tab-${activeSection}`);
     renderRows();
   }
   function formatValue(value, present = true) {
