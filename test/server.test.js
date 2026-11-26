@@ -39,7 +39,7 @@ test('server handler serves actual HTML and modules with a restrictive file allo
     assert.equal(response.status, 200);
     assert.match(await response.text(), /<script type="module" src="src\/app.js">/);
     assert.match(response.headers.get('content-security-policy'), /script-src 'self'/);
-    for (const name of ['app', 'api', 'compare', 'compare-view', 'demo', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'template', 'template-view', 'theme']) assert.equal((await send(`${base}/src/${name}.js`)).status, 200, name);
+    for (const name of ['app', 'api', 'compare', 'compare-view', 'demo', 'dictionary', 'dictionary-view', 'dom', 'icons', 'identity', 'projects', 'projects-view', 'router', 'template', 'template-view', 'theme']) assert.equal((await send(`${base}/src/${name}.js`)).status, 200, name);
     const tabler = await send(`${base}/vendor/tabler/1.7.5/tabler.min.css`);
     assert.equal(tabler.status, 200);
     assert.match(tabler.headers.get('content-type'), /^text\/css/);

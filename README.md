@@ -1,6 +1,6 @@
 # REDCap Toolkit
 
-A single-page app using HTML, CSS and plain JavaScript, with read-only tools for the schemas of classic REDCap projects. **Schema comparison** compares schemas from any two classic REDCap projects. **Upload template** produces a header-only CSV for importing data into one instrument of a project. No framework, build step or package installation is required.
+A single-page app using HTML, CSS and plain JavaScript, with read-only tools for the schemas of classic REDCap projects. **Schema comparison** compares schemas from any two classic REDCap projects. **Upload template** produces a header-only CSV for importing data into one instrument of a project. **Data dictionary** shows the fields of one or more instruments so values can be entered correctly. No framework, build step or package installation is required.
 
 The interface uses [Tabler](https://tabler.io) 1.7.5 CSS, vendored in `vendor/tabler/1.7.5/` with its MIT licence (sha384 `BY4EnLpEeqBnDZno/u4SjmwHqbv1/U9as69Q0Jk/zeaDJ8iV10NK7FP+6fFEGW4i`). Tabler's JavaScript is not used. The few icons are inline outline SVGs from `@tabler/icons` 3.52.0, whose MIT licence is in `vendor/tabler-icons/3.52.0/`.
 
@@ -34,7 +34,7 @@ REDCAP_API_URLS='https://redcap.example.org/api/' npm start
 
 Separate multiple API URLs with commas. Then enable **Use local proxy** in the Projects drawer.
 
-`REDCAP_API_URLS` is also the allowlist of URLs that may receive a token, whether or not the proxy is used. When it is set, the page's Content Security Policy permits connections only to those URLs' origins and a project cannot be saved with any other API URL. A saved project with another URL is shown as blocked and offers no token entry. No request containing a token is made to an unlisted URL. Without the variable, any HTTPS API URL is accepted, as before. The switch appears only when the page is served from `127.0.0.1` or `localhost`. The proxy forwards only the five read-only export operations (Project Info, Instruments, Repeating Instruments and Events, Metadata and Export Field Names) to the configured HTTPS URLs, refuses redirects, checks request origins and binds to loopback. Tokens pass through memory and are not logged or written to disk. Do not expose this development server to the network. Internal hosting should use a managed server with equivalent restrictions and HTTPS.
+`REDCAP_API_URLS` is also the allowlist of URLs that may receive a token, whether or not the proxy is used. When it is set, the page's Content Security Policy permits connections only to those URLs' origins and a project cannot be saved with any other API URL. A saved project with another URL is shown as blocked and offers no token entry. No request containing a token is made to an unlisted URL. Without the variable, any HTTPS API URL is accepted, as before. The switch appears only when the page is served from `127.0.0.1` or `localhost`. The proxy forwards only the five read-only export operations (Project Info, Instruments, Repeating Instruments and Events, Metadata and Export Field Names), which the three Tools share, to the configured HTTPS URLs, refuses redirects, checks request origins and binds to loopback. Tokens pass through memory and are not logged or written to disk. Do not expose this development server to the network. Internal hosting should use a managed server with equivalent restrictions and HTTPS.
 
 The static page and `src/` modules can also be hosted without Node. In that case direct browser access is required unless the host provides the optional `/api/export` contract. The **Use local proxy** option is intended for the supplied local server.
 
@@ -85,13 +85,23 @@ The CSV is a template only. Fill in data rows and import it with REDCap's Data I
 - The CSV is one header row, comma-separated, with a CRLF line ending, in UTF-8 without a byte order mark.
 - `redcap_data_access_group` is not included. For a project with Data Access Groups, add that column by hand after the record ID (and repeat columns) if you need it.
 
+## Data dictionary
+
+Open **Data dictionary** in the navbar (`#/dictionary`) and choose a project. Its Project Info must match the configured title exactly before Instruments and Metadata are requested; a project without a session token opens the Projects drawer instead. A failed or malformed export shows an error and no table. **Explore demo** shows the synthetic demo project without contacting REDCap.
+
+All instruments are ticked at first. Untick instruments, or use **Select all** and **Clear**, to narrow the table. Each row shows the variable name, the instrument label and name, the field label, the type with any validation, for example `text (date_dmy)`, the choices as code and label, whether the field is required and any minimum and maximum. Labels and choices are shown as text, never as HTML. Yes/no and true/false fields show their fixed codes, which REDCap does not export. Checkbox fields note that an upload has one column per option; Upload template gives their exact column names.
+
+**Hide free-text and non-entry fields** is ticked at first. It hides notes fields, text fields without validation and descriptive, file upload or calculated fields, so the table shows the fields whose codes or formats must be entered exactly. Validated text fields, such as dates and numbers, stay visible, and the record ID is always shown. **Search** matches any part of a field name, field label or choice label, ignoring case.
+
+Select the Variable, Instrument, Field label or Type heading to sort by it. The first selection sorts ascending, the second descending and the third returns to Metadata order. Instrument sorts by label. The table cannot be downloaded; REDCap's own data dictionary download has the complete file.
+
 ## Verification
 
 ```sh
 npm test
 ```
 
-The dependency-free tests cover comparison semantics, Upload template column rules, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison and Upload template into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
+The dependency-free tests cover comparison semantics, Upload template column rules, Data dictionary filter, search, choice and sort rules, identity checks, optional tags, legacy configuration migration, report downloads, malformed API responses, credential handling and the actual server/proxy request handler using a synthetic upstream, and that the GitHub Pages site publishes exactly the files the page loads. View tests mount the router, the Projects drawer, Schema comparison, Upload template and Data dictionary into one shared minimal fake DOM (`test/dom.js`) with synthetic storage and exports; they do not establish browser rendering or live REDCap compatibility. Handler tests do not bind a network port, so they can run in restricted sandboxes. Live REDCap verification requires your installation and authorised tokens. Browser rendering and interaction should also be checked on the browsers used by your team.
 
 ## Files
 
@@ -104,9 +114,11 @@ The dependency-free tests cover comparison semantics, Upload template column rul
 - `src/icons.js`: inline Tabler icons used by the views.
 - `src/compare-view.js`: the Schema comparison Tool: comparison orchestration, filters and report downloads.
 - `src/template-view.js`: the Upload template Tool: identity check, exports, field selection, preview and CSV download.
+- `src/dictionary-view.js`: the Data dictionary Tool: identity check, exports, instrument selection, filter, search and sorting.
 - `src/dom.js`: small DOM helpers used by the views.
 - `src/compare.js`: pure comparison rules.
 - `src/template.js`: pure Upload template column rules and CSV serialisation.
+- `src/dictionary.js`: pure Data dictionary rules: which fields are shown, choice parsing, search and sort order.
 - `src/identity.js`: pure project identity rules.
 - `src/projects.js`: reading and writing saved project configuration, with storage passed in.
 - `src/api.js`: API requests and response validation.
