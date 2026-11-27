@@ -5,10 +5,10 @@ import { installDocument } from './dom.js';
 import { demoSnapshots } from '../src/demo.js';
 import templateView from '../src/template-view.js';
 
-const project = (id, label, extras = {}) => ({ id, label, expectedTitle: label, tags: [], apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret`, ...extras });
+const project = (id, title, extras = {}) => ({ id, projectId: id, title, tags: [], apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret`, ...extras });
 
 // Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch, keyed by token.
-function mountTool(projects, { title, apiUrls = null } = {}) {
+function mountTool(projects, { projectId, apiUrls = null } = {}) {
   const document = installDocument();
   const container = document.createElement('div');
   const { left } = demoSnapshots();
@@ -16,7 +16,7 @@ function mountTool(projects, { title, apiUrls = null } = {}) {
   globalThis.fetch = async (url, { body }) => {
     const config = projects.find(item => item.token === body.get('token')), content = body.get('content');
     requests.push(content);
-    const exports = { project: { ...left.project, project_id: config.id, project_title: title ?? config.expectedTitle }, metadata: left.metadata, repeatingFormsEvents: left.repeating, exportFieldNames: left.fieldNames };
+    const exports = { project: { ...left.project, project_id: projectId ?? config.projectId, project_title: config.title }, metadata: left.metadata, repeatingFormsEvents: left.repeating, exportFieldNames: left.fieldNames };
     return Response.json(exports[content]);
   };
   const toolkit = {
@@ -84,10 +84,10 @@ test('ticked fields survive switching modes and are cleared when the instrument 
 });
 
 test('an identity failure requests nothing further and produces no template', async () => {
-  const ui = mountTool([project('one', 'First')], { title: 'Someone else' });
+  const ui = mountTool([project('one', 'First')], { projectId: 'other' });
   await ui.choose('project', 'one');
   assert.deepEqual(ui.requests, ['project']);
-  assert.match(ui.$('project-status').textContent, /Project title mismatch.*No template has been produced/);
+  assert.match(ui.$('project-status').textContent, /Project ID mismatch\. Expected one; received other\..*No template has been produced/);
   assert.equal(ui.$('instrument').disabled, true);
   assert.equal(ui.$('download').disabled, true);
   assert.equal(ui.document.downloads.length, 0);

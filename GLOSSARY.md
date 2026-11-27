@@ -25,7 +25,7 @@ A page, not a Tool, linked beside Projects, that shows the answers in `FAQ.md` t
 _Avoid_: Help Tool, docs
 
 **Project configuration**:
-A saved description of one REDCap project: display label, expected title, API URL and optional tags. It never includes the API token.
+A saved description of one REDCap project: API URL, project ID, the title and production status from its last checked Project Info, and tags. It is identified by its API URL and project ID, and never includes the API token.
 _Avoid_: Connection, profile
 
 **Reference project**:

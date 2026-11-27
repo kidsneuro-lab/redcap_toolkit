@@ -1,5 +1,6 @@
 import { containsTokenShape, readProjects, writeProjects } from './projects.js';
-import { isLocalHost, validateApiUrl } from './api.js';
+import { fetchExport, isLocalHost, validateApiUrl } from './api.js';
+import { checkProjectInfo, endpointKey } from './identity.js';
 import { button, element } from './dom.js';
 import { icon } from './icons.js';
 
@@ -11,13 +12,12 @@ const template = `<dialog id="projects-drawer" class="offcanvas offcanvas-end" a
     <div id="project-list" class="list-group list-group-flush mb-3"></div>
     <button id="new-project" class="btn btn-outline-primary w-100 mb-3" type="button">${icon('plus', 'me-1')}Add project</button>
     <form id="project-form" class="mb-3" hidden>
-      <input id="project-id" type="hidden">
-      <div class="mb-3"><label class="form-label" for="label">Display label</label><input id="label" class="form-control" spellcheck="false" required placeholder="Example project"></div>
-      <div class="mb-3"><label class="form-label" for="expected-title">Expected REDCap project title</label><input id="expected-title" class="form-control" spellcheck="false" required placeholder="Exact title returned by Project Info"><div class="form-hint">Case and whitespace must match exactly.</div></div>
-      <div class="mb-3"><label class="form-label" for="tags">Tags (optional)</label><input id="tags" class="form-control" spellcheck="false" placeholder="DEV, Phase 1"><div class="form-hint">Separate tags with commas. Tags describe projects and do not restrict comparisons or validate production status.</div></div>
+      <input id="config-id" type="hidden">
       <div class="mb-3"><label class="form-label" for="api-url">REDCap API URL</label><input id="api-url" class="form-control" type="url" spellcheck="false" required placeholder="https://redcap.example.org/api/"></div>
-      <div class="mb-3"><label class="form-label" for="token">API token</label><input id="token" class="form-control token-mask" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore placeholder="Paste token for this session"><div class="form-hint">Token is excluded from saved configuration and report downloads.</div></div>
-      <div class="d-flex flex-wrap gap-2 align-items-center"><button class="btn btn-primary" type="submit">Save project</button><button id="cancel-edit" class="btn" type="button">Cancel</button><span id="form-error" class="text-danger small" role="alert"></span></div>
+      <div class="mb-3"><label class="form-label" for="redcap-project-id">REDCap project ID</label><input id="redcap-project-id" class="form-control" inputmode="numeric" spellcheck="false" placeholder="PID shown in REDCap, such as 123"><div class="form-hint">The project title and production status are read from REDCap.</div></div>
+      <div class="mb-3"><label class="form-label" for="token">API token</label><input id="token" class="form-control token-mask" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore placeholder="Paste token for this session"><div class="form-hint">Each token is checked against the project ID when saved. Tokens are excluded from saved configuration and report downloads.</div></div>
+      <div class="mb-3"><label class="form-label" for="tags">Tags (optional)</label><input id="tags" class="form-control" spellcheck="false" placeholder="Phase 1"><div class="form-hint">Separate tags with commas. A PROD or DEV tag is added from REDCap's production status. Tags describe projects and do not restrict comparisons.</div></div>
+      <div class="d-flex flex-wrap gap-2 align-items-center"><button id="save-project" class="btn btn-primary" type="submit">Save project</button><button id="cancel-edit" class="btn" type="button">Cancel</button><span id="form-error" class="text-danger small" role="alert"></span></div>
     </form>
     <div id="proxy-setting" hidden><label class="form-check form-switch mb-1"><input id="proxy" class="form-check-input" type="checkbox"><span class="form-check-label">Use local proxy</span></label><div class="form-hint">For installations that block direct browser API access. Configure allowed API URLs on the local server first.</div></div>
   </div>
@@ -47,7 +47,9 @@ export function mountProjects(container, { trigger, hostname, storage, apiUrls =
     if (!projects.length) $('project-list').append(element('p', 'No projects configured yet.', 'text-secondary'));
     for (const project of projects) {
       const row = element('div', undefined, 'list-group-item'), info = element('div');
-      info.append(element('div', project.label, 'fw-bold'));
+      const name = element('div', undefined, 'fw-bold');
+      name.append(element('span', project.title ?? project.expectedTitle), element('span', project.projectId ? `PID ${project.projectId}` : 'Project ID not checked', 'text-secondary fw-normal small ms-2'));
+      info.append(name);
       for (const tag of project.tags) info.append(element('span', tag, 'badge bg-secondary-lt me-1'));
       const blocked = !permitted(project.apiUrl);
       info.append(element('div', `${blocked ? 'Blocked: this API URL is not permitted on this site' : project.token ? 'Token available for this session' : 'Token needed'} · ${project.apiUrl}`, `${blocked ? 'text-danger' : 'text-secondary'} small text-break`));
@@ -55,7 +57,7 @@ export function mountProjects(container, { trigger, hostname, storage, apiUrls =
       if (!project.token && !blocked) actions.append(button('Enter token', () => { edit(project); $('token').focus(); }, 'btn btn-sm btn-outline-warning'));
       actions.append(button('Edit', () => edit(project), 'btn btn-sm'), button('Remove', () => {
         projects = projects.filter(item => item.id !== project.id);
-        if ($('project-id').value === project.id) $('project-form').hidden = true;
+        if ($('config-id').value === project.id) $('project-form').hidden = true;
         changed();
       }, 'btn btn-sm btn-ghost-danger'));
       row.append(info, actions); $('project-list').append(row);
@@ -70,30 +72,49 @@ export function mountProjects(container, { trigger, hostname, storage, apiUrls =
   function edit(project = null) {
     show();
     $('project-form').reset();
-    $('project-id').value = project?.id || '';
-    $('label').value = project?.label || '';
-    $('expected-title').value = project?.expectedTitle || '';
-    $('tags').value = project?.tags.join(', ') || '';
+    $('config-id').value = project?.id || '';
     $('api-url').value = project?.apiUrl || '';
+    $('redcap-project-id').value = project?.projectId || '';
     $('token').value = project?.token || '';
+    $('tags').value = project?.tags.join(', ') || '';
     $('form-error').textContent = '';
     $('project-form').hidden = false;
-    $('label').focus();
+    $('api-url').focus();
   }
 
-  $('project-form').addEventListener('submit', event => {
+  // Saving checks a token against Project Info before the project or the token is kept.
+  $('project-form').addEventListener('submit', async event => {
     event.preventDefault();
+    $('form-error').textContent = '';
     try {
-      const project = { id: $('project-id').value || crypto.randomUUID(), label: $('label').value.trim(), expectedTitle: $('expected-title').value, tags: [...new Set($('tags').value.split(',').map(tag => tag.trim()).filter(Boolean))], apiUrl: validateApiUrl($('api-url').value.trim(), apiUrls), token: $('token').value.trim() };
-      if (!project.label || !project.expectedTitle.trim()) throw new Error('Complete the label and expected title.');
-      for (const [field, values] of [['Display label', [project.label]], ['Expected REDCap project title', [project.expectedTitle]], ['Tags', project.tags]]) {
-        if (values.some(containsTokenShape)) throw new Error(`${field} contains text that looks like a REDCap token. Paste the token into the API token field.`);
+      const id = $('config-id').value || crypto.randomUUID(), tags = [...new Set($('tags').value.split(',').map(tag => tag.trim()).filter(Boolean))];
+      const apiUrl = validateApiUrl($('api-url').value.trim(), apiUrls), projectId = $('redcap-project-id').value.trim(), token = $('token').value.trim();
+      const existing = projects.find(item => item.id === id), index = projects.indexOf(existing);
+      // A project saved before project IDs were recorded may leave the project ID blank, to be read from its first checked token.
+      if (!(existing && !existing.projectId && !projectId) && !/^[1-9]\d*$/.test(projectId)) throw new Error('Enter the REDCap project ID, using digits only.');
+      if (tags.some(containsTokenShape)) throw new Error('Tags contains text that looks like a REDCap token. Paste the token into the API token field.');
+      const duplicateOf = candidate => projects.find(item => item.id !== id && item.projectId && item.projectId === candidate.projectId && endpointKey(item.apiUrl) === endpointKey(candidate.apiUrl));
+      const refuseDuplicate = candidate => { const duplicate = duplicateOf(candidate); if (duplicate) throw new Error(`This project is already saved as ${JSON.stringify(duplicate.title)}.`); };
+      refuseDuplicate({ projectId, apiUrl });
+      const sameProject = existing && endpointKey(existing.apiUrl) === endpointKey(apiUrl) && (existing.projectId ?? '') === projectId;
+      if (sameProject && (!token || token === existing.token)) projects[index] = { ...existing, tags };
+      else {
+        // A changed API URL or project ID is a different project, so nothing is carried over from the saved one but its tags.
+        if (!token) throw new Error('Enter the API token. It is checked against Project Info before saving.');
+        $('save-project').disabled = true;
+        const info = await fetchExport({ apiUrl, token }, 'project', { proxy: local && $('proxy').checked, allowed: apiUrls });
+        const { project, notices } = checkProjectInfo(sameProject ? { ...existing, tags } : { id, projectId, tags, apiUrl }, info);
+        refuseDuplicate(project);
+        if (existing) projects[index] = { ...project, token }; else projects.push({ ...project, token });
+        for (const message of notices) notice(message);
       }
-      const existing = projects.findIndex(item => item.id === project.id);
-      if (existing < 0) projects.push(project); else projects[existing] = project;
       $('project-form').reset(); $('project-form').hidden = true;
       changed();
-    } catch (error) { $('form-error').textContent = error.message; }
+    } catch (error) {
+      // A token that fails the check is not kept anywhere.
+      $('token').value = '';
+      $('form-error').textContent = error.message;
+    } finally { $('save-project').disabled = false; }
   });
   $('new-project').addEventListener('click', () => edit());
   $('projects-button').addEventListener('click', () => show());

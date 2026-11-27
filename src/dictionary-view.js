@@ -1,6 +1,7 @@
 import { dictionaryRows } from './dictionary.js';
 import { fetchExport } from './api.js';
 import { validateIdentity } from './identity.js';
+import { projectName } from './projects.js';
 import { demoSnapshots } from './demo.js';
 import { element, option } from './dom.js';
 
@@ -30,7 +31,7 @@ function mount(container, toolkit) {
     const current = $('project').value;
     $('project').replaceChildren(option('Select a project', ''));
     if (demo) $('project').append(option(demoLabel, demoId));
-    for (const project of toolkit.projects()) $('project').append(option([project.label, ...project.tags].join(' · '), project.id));
+    for (const project of toolkit.projects()) $('project').append(option(projectName(project), project.id));
     $('project').value = current;
   }
   const chosenInstruments = () => snapshot.instruments.map(row => row.instrument_name).filter(name => $(`instrument-${name}`).checked);
