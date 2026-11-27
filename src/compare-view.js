@@ -1,5 +1,6 @@
 import { compareSnapshots, sections } from './compare.js';
 import { validateIdentity, validatePair } from './identity.js';
+import { projectName } from './projects.js';
 import { fetchExport } from './api.js';
 import { demoSnapshots } from './demo.js';
 import { button, download, element, option } from './dom.js';
@@ -67,7 +68,7 @@ function mount(container, toolkit) {
     for (const id of ['reference', 'comparison']) {
       const select = $(id), selected = select.value;
       select.replaceChildren(option('Select a project', ''));
-      for (const project of projects) select.append(option([project.label, ...project.tags].join(' · '), project.id));
+      for (const project of projects) select.append(option(projectName(project), project.id));
       select.value = projects.some(project => project.id === selected) ? selected : '';
     }
   }
@@ -96,7 +97,7 @@ function mount(container, toolkit) {
     const timeout = setTimeout(() => controller?.abort(new Error('Comparison timed out after 90 seconds. Check connectivity and try again.')), 90000);
     const progressNodes = configs.map(config => {
       const node = element('div', undefined, 'col-md-6');
-      node.append(element('strong', config.label));
+      node.append(element('strong', config.title));
       const progress = element('p', 'Project Info: checking identity…', 'text-secondary mb-0');
       progress.setAttribute('aria-live', 'polite'); node.append(progress); return { node, progress };
     });
@@ -111,10 +112,10 @@ function mount(container, toolkit) {
       const infoResults = await Promise.allSettled(configs.map((_, i) => request(i, 'project')));
       const failures = [];
       for (const [i, result] of infoResults.entries()) {
-        if (result.status === 'rejected') { failures.push(`${configs[i].label}: ${result.reason.message}`); continue; }
+        if (result.status === 'rejected') { failures.push(`${configs[i].title}: ${result.reason.message}`); continue; }
         snapshots[i].project = result.value;
         const issues = validateIdentity(configs[i], result.value);
-        if (issues.length) failures.push(`${configs[i].label}: ${issues.join(' ')}`);
+        if (issues.length) failures.push(`${configs[i].title}: ${issues.join(' ')}`);
         else progressNodes[i].progress.textContent = 'Project identity verified.';
       }
       if (failures.length) throw new Error(failures.join('\n'));
@@ -129,7 +130,7 @@ function mount(container, toolkit) {
       for (const [index, result] of responses.entries()) {
         const { i, section } = tasks[index];
         if (result.status === 'fulfilled') snapshots[i][section] = result.value;
-        else failures.push(`${configs[i].label} / ${titles[section]}: ${result.reason.message}`);
+        else failures.push(`${configs[i].title} / ${titles[section]}: ${result.reason.message}`);
       }
       if (signal.aborted) throw signal.reason;
       if (failures.length) throw new Error(`Comparison incomplete. No match result has been produced.\n${failures.join('\n')}`);
@@ -144,15 +145,15 @@ function mount(container, toolkit) {
   function displayReport(left, right, configs, provenance) {
     const comparison = compareSnapshots(left, right);
     // Explicitly select safe configuration fields. Never copy the token into the report.
-    report = { version: 1, ...provenance, coverage: { classicProjectsOnly: true, surveySetup: false, specificationCheck: 'manual', atomicSnapshot: false, omittedProjectInfoProperties: [] }, projects: configs.map((config, i) => ({ label: config.label, expectedTitle: config.expectedTitle, tags: [...config.tags], apiUrl: config.apiUrl, projectId: [left, right][i].project.project_id, validation: provenance.demo ? 'demo data' : 'title verified' })), snapshots: { reference: left, comparison: right }, ...comparison };
+    report = { version: 1, ...provenance, coverage: { classicProjectsOnly: true, surveySetup: false, specificationCheck: 'manual', atomicSnapshot: false, omittedProjectInfoProperties: [] }, projects: configs.map((config, i) => ({ title: config.title, tags: [...config.tags], apiUrl: config.apiUrl, projectId: [left, right][i].project.project_id, validation: provenance.demo ? 'demo data' : 'project ID verified' })), snapshots: { reference: left, comparison: right }, ...comparison };
     $('include-sensitive-project-info').checked = false;
     $('empty-state').hidden = true; $('report').hidden = false;
     $('report-kind').textContent = provenance.demo ? 'Demo report · synthetic data' : 'Comparison report';
     $('report-heading').textContent = 'Schema comparison';
-    $('report-context').textContent = `${configs[0].label} compared with ${configs[1].label} · ${new Date(provenance.completedAt).toLocaleString('en-AU')}`;
+    $('report-context').textContent = `${configs[0].title} compared with ${configs[1].title} · ${new Date(provenance.completedAt).toLocaleString('en-AU')}`;
     $('identities').replaceChildren(...report.projects.map((project, i) => {
       const column = element('div', undefined, 'col-md-6'), card = element('div', undefined, 'card card-body h-100 text-break');
-      card.append(element('span', [i ? 'Comparison' : 'Reference', ...project.tags].join(' · '), 'badge bg-azure-lt align-self-start mb-2'), element('strong', project.label), element('div', `Project ID ${project.projectId} · ${project.validation}`, 'text-secondary small'));
+      card.append(element('span', [i ? 'Comparison' : 'Reference', ...project.tags].join(' · '), 'badge bg-azure-lt align-self-start mb-2'), element('strong', project.title), element('div', `Project ID ${project.projectId} · ${project.validation}`, 'text-secondary small'));
       column.append(card); return column;
     }));
     const forms = [...new Set([...left.instruments, ...right.instruments].map(row => row.instrument_name))].sort();
@@ -216,7 +217,7 @@ function mount(container, toolkit) {
       if (row.expected && row.status !== 'unchanged') summary.append(element('span', 'Expected difference', 'badge bg-secondary-lt me-2'));
       summary.append(element('span', activeSection === 'instruments' ? `${row.fieldChanges} changed or unmatched fields` : `${row.changes.length} changed properties`, 'text-secondary small'));
       const table = element('table', undefined, 'table table-sm card-table'), head = element('thead'), heading = element('tr');
-      for (const text of ['Property', `Reference · ${report.projects[0].label}`, `Comparison · ${report.projects[1].label}`]) { const th = element('th', text, `text-wrap${text === 'Property' ? ' w-25' : ''}`); th.scope = 'col'; heading.append(th); }
+      for (const text of ['Property', `Reference · ${report.projects[0].title}`, `Comparison · ${report.projects[1].title}`]) { const th = element('th', text, `text-wrap${text === 'Property' ? ' w-25' : ''}`); th.scope = 'col'; heading.append(th); }
       head.append(heading); table.append(head);
       const body = element('tbody');
       let values = row.changes;
@@ -235,7 +236,7 @@ function mount(container, toolkit) {
   for (const id of ['search', 'instrument-filter', 'differences-only']) $(id).addEventListener(id === 'search' ? 'input' : 'change', renderRows);
   $('demo').addEventListener('click', () => {
     const { left, right } = demoSnapshots();
-    const configs = [left, right].map((snapshot, i) => ({ label: snapshot.project.project_title, expectedTitle: snapshot.project.project_title, tags: [i ? 'PROD' : 'DEV'], apiUrl: 'https://demo.invalid/api/' }));
+    const configs = [left, right].map((snapshot, i) => ({ title: snapshot.project.project_title, projectId: String(snapshot.project.project_id), tags: [i ? 'PROD' : 'DEV'], apiUrl: 'https://demo.invalid/api/' }));
     const now = new Date().toISOString();
     displayReport(left, right, configs, { demo: true, startedAt: now, completedAt: now });
   });

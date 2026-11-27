@@ -6,11 +6,11 @@ import recordView from '../src/record-view.js';
 
 // The fake DOM keeps each node's own text, so a node's text is gathered from its descendants.
 const text = node => [node.textContent, ...[...node.descendants()].map(child => child.textContent)].join('');
-const project = (id, label) => ({ id, label, expectedTitle: label, tags: [], apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
+const project = (id, title) => ({ id, projectId: id, title, tags: [], apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
 
-// Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch; `title` overrides the exported project title.
+// Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch; `projectId` overrides the exported project ID.
 // The record export serves the demo rows whose record ID matches the requested one, as REDCap does.
-function mountTool(projects, { title, exports = {} } = {}) {
+function mountTool(projects, { projectId, exports = {} } = {}) {
   const document = installDocument();
   const container = document.createElement('div');
   const { left } = demoSnapshots();
@@ -20,7 +20,7 @@ function mountTool(projects, { title, exports = {} } = {}) {
     const config = projects.find(item => item.token === body.get('token')), section = body.get('content');
     requests.push(section === 'record' ? `record:${body.get('records[0]')}` : section);
     if (section === 'record' && hold) await hold;
-    const served = { project: { ...left.project, project_title: title ?? config.expectedTitle }, instrument: left.instruments, metadata: left.metadata, exportFieldNames: left.fieldNames, record: left.record.filter(row => row.record_id === body.get('records[0]')), ...exports };
+    const served = { project: { ...left.project, project_id: projectId ?? config.projectId, project_title: config.title }, instrument: left.instruments, metadata: left.metadata, exportFieldNames: left.fieldNames, record: left.record.filter(row => row.record_id === body.get('records[0]')), ...exports };
     return Response.json(served[section]);
   };
   const changes = [];
@@ -58,8 +58,8 @@ test('Record viewer checks identity, reads Instruments, Metadata and Export Fiel
   assert.match(ui.$('status').textContent, /^Record SYN-001 · read /);
 });
 
-test('a title mismatch stops before any other export, and a blank record ID makes no request', async () => {
-  const mismatch = mountTool([project('one', 'Example project DEV')], { title: 'Another project' });
+test('a project ID mismatch stops before any other export, and a blank record ID makes no request', async () => {
+  const mismatch = mountTool([project('one', 'Example project DEV')], { projectId: 'other' });
   await mismatch.choose('one');
   assert.deepEqual(mismatch.requests, ['project']);
   assert.equal(mismatch.$('controls').hidden, true);

@@ -6,10 +6,10 @@ import dictionaryView from '../src/dictionary-view.js';
 
 // The fake DOM keeps each node's own text, so a cell's text is gathered from its descendants.
 const text = node => [node.textContent, ...[...node.descendants()].map(child => child.textContent)].join('');
-const project = (id, label) => ({ id, label, expectedTitle: label, tags: [], apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
+const project = (id, title) => ({ id, projectId: id, title, tags: [], apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
 
-// Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch; `title` overrides the exported project title.
-function mountTool(projects, { title, exports = {} } = {}) {
+// Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch; `projectId` overrides the exported project ID.
+function mountTool(projects, { projectId, exports = {} } = {}) {
   const document = installDocument();
   const container = document.createElement('div');
   const { left } = demoSnapshots();
@@ -17,7 +17,7 @@ function mountTool(projects, { title, exports = {} } = {}) {
   globalThis.fetch = async (url, { body }) => {
     const config = projects.find(item => item.token === body.get('token')), section = body.get('content');
     requests.push(section);
-    const served = { project: { ...left.project, project_title: title ?? config.expectedTitle }, instrument: left.instruments, metadata: left.metadata, ...exports };
+    const served = { project: { ...left.project, project_id: projectId ?? config.projectId, project_title: config.title }, instrument: left.instruments, metadata: left.metadata, ...exports };
     return Response.json(served[section]);
   };
   const changes = [];
@@ -52,8 +52,8 @@ test('Data dictionary is a Tool that checks identity before reading Instruments 
   assert.deepEqual(ui.shownNames(), ['record_id', 'consent', 'collected', 'freezer_events']);
 });
 
-test('a title mismatch stops before any other export, and a failed export shows an error instead of a partial dictionary', async () => {
-  const mismatch = mountTool([project('one', 'Example project DEV')], { title: 'Another project' });
+test('a project ID mismatch stops before any other export, and a failed export shows an error instead of a partial dictionary', async () => {
+  const mismatch = mountTool([project('one', 'Example project DEV')], { projectId: 'other' });
   await mismatch.choose('one');
   assert.deepEqual(mismatch.requests, ['project']);
   assert.equal(mismatch.$('controls').hidden, true);

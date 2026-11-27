@@ -5,7 +5,7 @@ import { installDocument } from './dom.js';
 import { demoSnapshots } from '../src/demo.js';
 import compareView from '../src/compare-view.js';
 
-const project = (id, label, tags = []) => ({ id, label, expectedTitle: label, tags, apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
+const project = (id, title, tags = []) => ({ id, projectId: id, title, tags, apiUrl: 'https://demo.invalid/api/', token: `${id}-synthetic-secret` });
 
 // Mounts the Tool with a fake toolkit. Synthetic REDCap exports are served through a stubbed fetch, keyed by token.
 function mountTool(projects, { proxy = false, apiUrls = null, projectInfo = {} } = {}) {
@@ -16,7 +16,7 @@ function mountTool(projects, { proxy = false, apiUrls = null, projectInfo = {} }
   globalThis.fetch = async (url, { body }) => {
     const config = projects.find(item => item.token === body.get('token')), section = body.get('content');
     requests.push([config.id, section, url]);
-    const exports = { project: { ...left.project, ...projectInfo[config.id], project_id: config.id, project_title: config.expectedTitle, in_production: 1 }, instrument: left.instruments, repeatingFormsEvents: left.repeating, metadata: left.metadata };
+    const exports = { project: { ...left.project, ...projectInfo[config.id], project_id: config.id, project_title: config.title, in_production: 1 }, instrument: left.instruments, repeatingFormsEvents: left.repeating, metadata: left.metadata };
     return Response.json(exports[section]);
   };
   const toolkit = {
@@ -122,7 +122,11 @@ test('Schema comparison reports both projects with their tags and downloads the 
   await ui.$('download').click();
   const report = await ui.downloaded();
   assert.ok(!JSON.stringify(report).includes('synthetic-secret'));
-  assert.deepEqual(report.projects.map(item => [item.tags, item.validation]), [[['DEV', 'custom', '<tag>'], 'title verified'], [[], 'title verified']]);
+  assert.deepEqual(report.projects, [
+    { title: 'First', tags: ['DEV', 'custom', '<tag>'], apiUrl: 'https://demo.invalid/api/', projectId: 'one', validation: 'project ID verified' },
+    { title: 'Second', tags: [], apiUrl: 'https://demo.invalid/api/', projectId: 'two', validation: 'project ID verified' }
+  ]);
+  assert.deepEqual([...ui.$('reference').children].map(node => node.textContent).slice(1), ['First (PID one) · DEV · custom · <tag>', 'Second (PID two)']);
   assert.equal(report.demo, false);
 });
 
@@ -132,7 +136,7 @@ test('same DEV tags and different group tags allow comparison regardless of prod
   await ui.$('compare').click();
   assert.equal(ui.requests.length, 8);
   await ui.$('download').click();
-  assert.ok((await ui.downloaded()).projects.every(item => item.validation === 'title verified'));
+  assert.ok((await ui.downloaded()).projects.every(item => item.validation === 'project ID verified'));
 });
 
 test('duplicate selections are still blocked and demo reports retain descriptive tags', async () => {

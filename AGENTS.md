@@ -37,7 +37,9 @@ This app has four Tools for classic REDCap projects, without longitudinal events
 
 ## Comparison rules
 
-- Validate both projects before requesting their remaining schema exports. Require exact configured title matches. Tags are optional descriptive labels and must not validate production status.
+- Identify a saved project by its API URL and REDCap project ID. Validate both projects' project IDs before requesting their remaining schema exports. The title comes from Project Info and is for display only; a title change must not block a Tool.
+- Check every token against Project Info in the Projects drawer before keeping it. Only the drawer refreshes saved titles, production status and the derived PROD or DEV tag; Tools never write to saved configuration.
+- Tags are descriptive labels. The derived PROD or DEV tag records the last checked production status; tags must not restrict comparisons.
 - Reject duplicate underlying projects and longitudinal configuration. Allow any two distinct classic projects regardless of tags or comparison group.
 - Match instruments by `instrument_name`, repeating instruments by `form_name`, and fields globally by `field_name`. A field moving between instruments is a change. A renamed field is a reference-only field and a comparison-only field.
 - Compare the union of exported property names. Preserve exact text and distinguish an absent property, an empty string and `null`.
