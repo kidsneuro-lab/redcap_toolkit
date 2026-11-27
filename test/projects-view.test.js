@@ -91,6 +91,25 @@ test('a token entered for a saved project is checked, and refreshes its title an
   assert.deepEqual(ui.notices.map(item => item.message), ['Title changed from "Old title" to "Synthetic study".', 'Old title moved back to development. Its PROD tag is now DEV.']);
 });
 
+test('the project list is locked while a token is checked, and a project removed meanwhile is not saved over another', async () => {
+  const second = { ...checked, id: 'second', projectId: '202', title: 'Second study', tags: ['PROD'] };
+  const ui = mountView([checked, second]);
+  let respond;
+  globalThis.fetch = () => new Promise(resolve => { respond = resolve; });
+  ui.button('Enter token').click();
+  ui.$('token').value = 'synthetic-secret';
+  const pending = ui.submit();
+  assert.equal(ui.$('project-list').inert, true);
+  assert.equal(ui.$('new-project').disabled, true);
+  ui.button('Remove').click();
+  respond(Response.json(infos['synthetic-secret']));
+  await pending;
+  assert.deepEqual(ui.stored(), [second]);
+  assert.deepEqual(ui.view.projects(), [{ ...second, token: '' }]);
+  assert.equal(ui.$('project-list').inert, false);
+  assert.equal(ui.$('new-project').disabled, false);
+});
+
 test('tags are edited without a token, and changing the project ID or API URL needs a token checked again', async () => {
   const ui = mountView([checked]);
   ui.button('Edit').click();

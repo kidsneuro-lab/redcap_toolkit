@@ -89,7 +89,7 @@ export function mountProjects(container, { trigger, hostname, storage, apiUrls =
     try {
       const id = $('config-id').value || crypto.randomUUID(), tags = [...new Set($('tags').value.split(',').map(tag => tag.trim()).filter(Boolean))];
       const apiUrl = validateApiUrl($('api-url').value.trim(), apiUrls), projectId = $('redcap-project-id').value.trim(), token = $('token').value.trim();
-      const existing = projects.find(item => item.id === id), index = projects.indexOf(existing);
+      const existing = projects.find(item => item.id === id);
       // A project saved before project IDs were recorded may leave the project ID blank, to be read from its first checked token.
       if (!(existing && !existing.projectId && !projectId) && !/^[1-9]\d*$/.test(projectId)) throw new Error('Enter the REDCap project ID, using digits only.');
       if (tags.some(containsTokenShape)) throw new Error('Tags contains text that looks like a REDCap token. Paste the token into the API token field.');
@@ -97,13 +97,17 @@ export function mountProjects(container, { trigger, hostname, storage, apiUrls =
       const refuseDuplicate = candidate => { const duplicate = duplicateOf(candidate); if (duplicate) throw new Error(`This project is already saved as ${JSON.stringify(duplicate.title)}.`); };
       refuseDuplicate({ projectId, apiUrl });
       const sameProject = existing && endpointKey(existing.apiUrl) === endpointKey(apiUrl) && (existing.projectId ?? '') === projectId;
-      if (sameProject && (!token || token === existing.token)) projects[index] = { ...existing, tags };
+      if (sameProject && (!token || token === existing.token)) projects[projects.indexOf(existing)] = { ...existing, tags };
       else {
         // A changed API URL or project ID is a different project, so nothing is carried over from the saved one but its tags.
         if (!token) throw new Error('Enter the API token. It is checked against Project Info before saving.');
-        $('save-project').disabled = true;
+        // The list is locked while the check runs. The project is found again by its ID afterwards, in case the list changed anyway.
+        $('save-project').disabled = $('new-project').disabled = $('project-list').inert = true;
         const info = await fetchExport({ apiUrl, token }, 'project', { proxy: local && $('proxy').checked, allowed: apiUrls });
         const { project, notices } = checkProjectInfo(sameProject ? { ...existing, tags } : { id, projectId, tags, apiUrl }, info);
+        const index = projects.findIndex(item => item.id === id);
+        // A project removed during the check stays removed, and its token is not kept.
+        if (existing && index < 0) return;
         refuseDuplicate(project);
         if (existing) projects[index] = { ...project, token }; else projects.push({ ...project, token });
         for (const message of notices) notice(message);
@@ -114,7 +118,7 @@ export function mountProjects(container, { trigger, hostname, storage, apiUrls =
       // A token that fails the check is not kept anywhere.
       $('token').value = '';
       $('form-error').textContent = error.message;
-    } finally { $('save-project').disabled = false; }
+    } finally { $('save-project').disabled = $('new-project').disabled = $('project-list').inert = false; }
   });
   $('new-project').addEventListener('click', () => edit());
   $('projects-button').addEventListener('click', () => show());
